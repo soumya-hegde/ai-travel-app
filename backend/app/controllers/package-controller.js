@@ -1,41 +1,44 @@
-const Package = require('../models/package-model');
-const { packageValidationSchema } = require('../validators/validation')
+const Package = require("../models/package-model");
+const { packageValidationSchema } = require("../validators/validation");
 const packageCtlr = {};
 
-packageCtlr.createPackage = async (req, res) =>{
-    const body = req.body;
-    const { error, value } = await packageValidationSchema.validate(body, {abortEarly:false});
-    if(error){
-      return res.status(400).json({error:error.details.map(err => err.message)});
+packageCtlr.createPackage = async (req, res) => {
+  const body = req.body;
+  const { error, value } = await packageValidationSchema.validate(body, {
+    abortEarly: false,
+  });
+  if (error) {
+    return res
+      .status(400)
+      .json({ error: error.details.map((err) => err.message) });
+  }
+  try {
+    if (req.role !== "agent") {
+      return res.status(403).json({
+        message: "Only agents can create Itinerary",
+      });
     }
-    try{
-        if (req.role !== "agent") {
-            return res.status(403).json({
-                message: "Only agents can create Itinerary"
-            });
-        }
-        const package = new Package(value);
+    const package = new Package(value);
 
-        package.createdBy = req.userId;
-        package.status = "pending"; // always pending
+    package.createdBy = req.userId;
+    package.status = "pending"; // always pending
 
-        // handle image upload
-        if (req.file) {
-        package.image = req.file.path;
-        }
-
-        await package.save();
-
-        res.status(201).json({
-        message: "Itinerary created and pending approval",
-        package: package
-        });
+    // handle image upload
+    if (req.file) {
+      package.image = req.file.path;
     }
-    catch(err){
-        console.error(err);
-        res.status(400).json(err);
-    }
-}
+
+    await package.save();
+
+    res.status(201).json({
+      message: "Itinerary created and pending approval",
+      package: package,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(400).json(err);
+  }
+};
 
 //single record approval
 packageCtlr.adminApprove = async (req, res) => {
@@ -61,9 +64,8 @@ packageCtlr.adminApprove = async (req, res) => {
 
     res.json({
       message: "Itinerary approved successfully",
-      package: package
+      package: package,
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Something went wrong" });
@@ -86,27 +88,25 @@ packageCtlr.adminReject = async (req, res) => {
         status: "rejected",
         rejectedBy: req.userId,
         rejectedAt: new Date(),
-        rejectionReason: rejectionReason || "Not specified"
+        rejectionReason: rejectionReason || "Not specified",
       },
       { new: true }
     );
 
     if (!package) {
-       return res.status(404).json({ message: "Itinerary not found" });
-  }
-
+      return res.status(404).json({ message: "Itinerary not found" });
+    }
 
     res.json({
       message: "Created Itinerary rejected",
-      package: package
+      package: package,
     });
-
   } catch (err) {
-    res.status(500).json({message:"Something went wrong!!!"});
+    res.status(500).json({ message: "Something went wrong!!!" });
   }
 };
 
-//bulk Approval 
+//bulk Approval
 packageCtlr.adminBulkApprove = async (req, res) => {
   try {
     if (req.role !== "admin") {
@@ -116,30 +116,29 @@ packageCtlr.adminBulkApprove = async (req, res) => {
       return res.status(400).json({ message: "Request body required" });
     }
     const { packageIds } = req.body;
-    
+
     if (!Array.isArray(packageIds) || packageIds.length === 0) {
       return res.status(400).json({
-        message: "Itinerary IDs array is required"
+        message: "Itinerary IDs array is required",
       });
     }
-   //$in : Match any document where the field value exists inside this array
-   
+    //$in : Match any document where the field value exists inside this array
+
     const result = await Package.updateMany(
-      { _id: { $in: packageIds } },   //here packageIds is array
+      { _id: { $in: packageIds } }, //here packageIds is array
       {
         $set: {
           status: "approved",
           approvedBy: req.userId,
           approvedAt: new Date(),
-        }
+        },
       }
     );
 
     res.json({
       message: "Itinerary approved successfully",
-      modifiedCount: result.modifiedCount   // comes from updateMany
+      modifiedCount: result.modifiedCount, // comes from updateMany
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Something went wrong" });
@@ -159,54 +158,55 @@ packageCtlr.adminBulkReject = async (req, res) => {
 
     if (!Array.isArray(packageIds) || packageIds.length === 0) {
       return res.status(400).json({
-        message: "Itinerary IDs array is required"
+        message: "Itinerary IDs array is required",
       });
     }
 
     const result = await Package.updateMany(
       { _id: { $in: packageIds } },
       {
-        $set: {  //$set in updateMany to update specific fields
+        $set: {
+          //$set in updateMany to update specific fields
           status: "rejected",
           rejectedBy: req.userId,
           rejectedAt: new Date(),
-          rejectionReason: rejectionReason || "Not specified"
-        }
+          rejectionReason: rejectionReason || "Not specified",
+        },
       }
     );
 
     res.json({
       message: "Itinerary rejected successfully",
-      modifiedCount: result.modifiedCount
+      modifiedCount: result.modifiedCount,
     });
-
   } catch (err) {
-    res.status(500).json({message:"Something went wrong!!!"});
+    res.status(500).json({ message: "Something went wrong!!!" });
   }
 };
 
 // View itineraries (Users view approved ones; Admin/Agent see all)
 packageCtlr.list = async (req, res) => {
-    try{
-        let package;
-        if(req.role == 'user'){
-            package = await Package.find({status:"approved"});
-        }else{
-            package = await Package.find();
-        }
-        res.json(package);
-    }catch(err){
-        console.log(err);
-        res.status(500).json({error:'something went wrong!!!'});
+  try {
+    let package;
+    if (req.role == "user") {
+      package = await Package.find({ status: "approved" });
+    } else {
+      package = await Package.find();
     }
-}
-
+    res.json(package);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "something went wrong!!!" });
+  }
+};
 
 //update the Itinerary
 packageCtlr.packageUpdate = async (req, res) => {
   try {
     if (req.role !== "agent") {
-      return res.status(403).json({ message: "Only agents can update itineraries" });
+      return res
+        .status(403)
+        .json({ message: "Only agents can update itineraries" });
     }
 
     const packageId = req.params.packageId;
@@ -220,7 +220,7 @@ packageCtlr.packageUpdate = async (req, res) => {
 
     if (package.createdBy.toString() !== agentId) {
       return res.status(403).json({
-        message: "You are not allowed to update this itinerary"
+        message: "You are not allowed to update this itinerary",
       });
     }
 
@@ -252,7 +252,7 @@ packageCtlr.packageUpdate = async (req, res) => {
       "packagePrice",
       "packageDiscountPrice",
       "packageOffer",
-      "packageImages"
+      "packageImages",
     ];
 
     const updateData = {};
@@ -275,58 +275,60 @@ packageCtlr.packageUpdate = async (req, res) => {
       { $set: updateData },
       { new: true, runValidators: true }
     );
-    if (Object.keys(updateData).length === 6) { // only approval reset fields
+    if (Object.keys(updateData).length === 6) {
+      // only approval reset fields
       return res.status(400).json({
-        message: "At least one field must be updated"
+        message: "At least one field must be updated",
       });
     }
 
     res.json({
       message: "Itinerary updated successfully and sent for re-approval",
-      package: updatedPackage
+      package: updatedPackage,
     });
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-//Remove the Itinerary 
-packageCtlr.removePackage = async (req, res) =>{
-  try{
+//Remove the Itinerary
+packageCtlr.removePackage = async (req, res) => {
+  try {
     const packageId = req.params.packageId;
     const agentId = req.userId;
 
     const package = await Package.findById(packageId);
-    if(!package){
-      return res.status(404).json({message:"Itinerary not found!!!"});
+    if (!package) {
+      return res.status(404).json({ message: "Itinerary not found!!!" });
     }
     //
-    if(req.role === "admin"){
+    if (req.role === "admin") {
       await Package.findByIdAndDelete(packageId);
       return res.json({ message: "Itinerary removed by admin" });
     }
     //check loggedin agentId is same as agentId who created the package
-    if(req.role === "agent"){
-      if(package.createdBy.toString() !== agentId){
-        return res.status(403).json({message:"You are not allowed to delete this itinerary"})
+    if (req.role === "agent") {
+      if (package.createdBy.toString() !== agentId) {
+        return res
+          .status(403)
+          .json({ message: "You are not allowed to delete this itinerary" });
       }
 
-      if(package.status === "approved"){
-        return res.status(403).json({message:"Approved itineraries cannot be removed."})
+      if (package.status === "approved") {
+        return res
+          .status(403)
+          .json({ message: "Approved itineraries cannot be removed." });
       }
 
       await Package.findByIdAndDelete(packageId);
-      return res.json({message:"Itinerary removed successfully."});
+      return res.json({ message: "Itinerary removed successfully." });
     }
-  
-    return res.status(403).json({message:"Access Denied"});
 
-  }catch(err){
-    res.status(500).json({error:'something went wrong!!!'});
+    return res.status(403).json({ message: "Access Denied" });
+  } catch (err) {
+    res.status(500).json({ error: "something went wrong!!!" });
   }
-}
-
+};
 
 module.exports = packageCtlr;
 

@@ -1,48 +1,54 @@
-const Booking = require('../models/booking-model');
-const Package = require('../models/package-model');
-const { bookingValidationSchema } = require('../validators/validation')
-const bcryptjs = require('bcryptjs');
+const Booking = require("../models/booking-model");
+const Package = require("../models/package-model");
+const { bookingValidationSchema } = require("../validators/validation");
+const bcryptjs = require("bcryptjs");
 const bookingCtlr = {};
 
 bookingCtlr.createBooking = async (req, res) => {
   try {
     const body = req.body;
-    const { error, value } = bookingValidationSchema.validate(body, {abortEarly:false});
-    if(error){
-        return res.status(400).json({error:error.details.map(err => err.message)});
+    const { error, value } = bookingValidationSchema.validate(body, {
+      abortEarly: false,
+    });
+    if (error) {
+      return res
+        .status(400)
+        .json({ error: error.details.map((err) => err.message) });
     }
-    
+
     if (req.role !== "user") {
       return res.status(403).json({ message: "Only users can book tours" });
     }
 
     if (!value || Object.keys(value).length === 0) {
-        return res.status(400).json({
-            message: "Request body is required"
-        });
+      return res.status(400).json({
+        message: "Request body is required",
+      });
     }
 
     const { packageId, travelDate } = value;
 
     const package = await Package.findOne({
       _id: packageId,
-      status: "approved"
+      status: "approved",
     });
 
     if (!package) {
-      return res.status(400).json({ message: "Package not available for booking" });
+      return res
+        .status(400)
+        .json({ message: "Package not available for booking" });
     }
 
     const existingBooking = await Booking.findOne({
       userId: req.userId,
       packageId,
       travelDate,
-      status: { $ne: "cancelled" }
+      status: { $ne: "cancelled" },
     });
 
     if (existingBooking) {
       return res.status(400).json({
-        message: "You already booked this package for this date"
+        message: "You already booked this package for this date",
       });
     }
 
@@ -51,12 +57,11 @@ bookingCtlr.createBooking = async (req, res) => {
       agentId: package.createdBy,
       packageId,
       travelDate,
-      totalAmount: package.packageDiscountPrice || package.packagePrice
+      totalAmount: package.packageDiscountPrice || package.packagePrice,
     });
 
     await booking.save();
     res.status(201).json(booking);
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -79,9 +84,7 @@ bookingCtlr.viewBooking = async (req, res) => {
     // ADMIN : sees all bookings
     else if (req.role === "admin") {
       filter = {};
-    }
-
-    else {
+    } else {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -97,9 +100,8 @@ bookingCtlr.viewBooking = async (req, res) => {
 
     res.json({
       count: bookings.length,
-      bookings
+      bookings,
     });
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -116,19 +118,19 @@ bookingCtlr.cancelBooking = async (req, res) => {
 
     if (req.role !== "admin") {
       return res.status(403).json({
-        message: "Only admin can cancel bookings"
+        message: "Only admin can cancel bookings",
       });
     }
 
     if (booking.status === "completed") {
       return res.status(400).json({
-        message: "Completed bookings cannot be cancelled"
+        message: "Completed bookings cannot be cancelled",
       });
     }
 
     if (booking.status === "cancelled") {
       return res.status(400).json({
-        message: "Booking already cancelled"
+        message: "Booking already cancelled",
       });
     }
 
@@ -139,7 +141,6 @@ bookingCtlr.cancelBooking = async (req, res) => {
     await booking.save();
 
     res.json({ message: "Booking cancelled successfully" });
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

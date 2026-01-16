@@ -1,45 +1,48 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const { Schema, model } = mongoose;
 
-const bookingSchema = new Schema({
-  userId: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true
+const bookingSchema = new Schema(
+  {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    agentId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    packageId: {
+      type: Schema.Types.ObjectId,
+      ref: "Package",
+      required: true,
+    },
+    travelDate: {
+      type: Date,
+      required: true,
+    },
+    totalAmount: {
+      type: Number,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["confirmed", "cancelled", "completed"],
+      default: "confirmed",
+    },
+    cancelledBy: {
+      type: String,
+      enum: ["admin", "system"],
+      default: null,
+    },
+    cancelledAt: {
+      type: Date,
+      default: null,
+    },
   },
-  agentId: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true
-  },
-  packageId: {
-    type: Schema.Types.ObjectId,
-    ref: "Package",
-    required: true
-  },
-  travelDate: {
-    type: Date,
-    required: true
-  },
-  totalAmount: {
-    type: Number,
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ["confirmed", "cancelled", "completed"],
-    default: "confirmed"
-  },
-  cancelledBy: {
-    type: String,
-    enum: ["admin", "system"],
-    default: null
-  },
-  cancelledAt: {
-    type: Date,
-    default: null
-  }
-}, { timestamps: true });
+  { timestamps: true }
+);
 
-const Booking = model('Booking', bookingSchema);
+const Booking = model("Booking", bookingSchema);
 module.exports = Booking;
