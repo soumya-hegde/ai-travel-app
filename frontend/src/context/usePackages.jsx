@@ -1,6 +1,6 @@
 // src/context/usePackages.jsx
 import { useContext } from "react";
-import PackageContext from "./PackageContext";
+import { PackageContext } from "./PackageContext";
 
 export default function usePackages() {
   const context = useContext(PackageContext);

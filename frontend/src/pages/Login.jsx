@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-
+import { useNavigate } from "react-router-dom";
 import { loginUser } from "../slices/authSlice";
 
 export default function Login() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -12,12 +13,9 @@ export default function Login() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    dispatch(
-      loginUser({
-        email,
-        password,
-      }),
-    );
+    dispatch(loginUser({ email, password }))
+      .unwrap()
+      .then(() => navigate("/dashboard"));
   };
 
   return (
