@@ -1,5 +1,6 @@
 const Booking = require("../models/booking-model");
 const Package = require("../models/package-model");
+const sendMail = require("../utils/mailer");
 const { bookingValidationSchema } = require("../validators/validation");
 const bcryptjs = require("bcryptjs");
 const bookingCtlr = {};
@@ -145,5 +146,52 @@ bookingCtlr.cancelBooking = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+bookingCtlr.cancelRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!reason || reason.trim().length === 0) {
+      return res.status(400).json({ error: "Reason is required" });
+    }
+
+    const booking = await Booking.findById(id)
+      .populate("userId", "username email")
+      .populate("packageId", "packageName packageDestination");
+
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    const text = `
+Cancellation request received
+
+Requested By:
+- Name: ${booking.userId?.username}
+- Email: ${booking.userId?.email}
+
+Booking Details:
+- Booking ID: ${booking._id}
+- Package: ${booking.packageId?.packageName}
+- Destination: ${booking.packageId?.packageDestination}
+- Travel Date: ${booking.travelDate}
+Reason:
+${reason}`;
+    await sendMail({
+      to: process.env.ADMIN_EMAIL,
+      subject: "Cancel Booking Request",
+      text,
+      replyTo: booking.userId?.email,
+    });
+
+    return res.json({ message: "Cancel request sent to admin" });
+  } catch (err) {
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+
 
 module.exports = bookingCtlr;

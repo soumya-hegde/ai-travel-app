@@ -7,5 +7,8 @@ export default function usePackages() {
   if (!context) {
     throw new Error("usePackages must be used inside PackageProvider");
   }
+  if (typeof context.getPackageById !== "function") {
+    throw new Error("getPackageById is not available in PackageProvider");
+  }
   return context;
 }

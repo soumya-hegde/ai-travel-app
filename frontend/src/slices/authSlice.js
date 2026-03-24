@@ -6,8 +6,10 @@ export const loginUser = createAsyncThunk(
   async (data, thunkAPI) => {
     try {
       const response = await API.post("/login", data);
+
       localStorage.setItem("token", response.data.token);
-      return response.data;
+
+      return response.data; // should include role
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response.data);
     }
@@ -29,12 +31,13 @@ export const registerUser = createAsyncThunk(
 const authSlice = createSlice({
   name: "auth",
 
-  initialState: {
-    user: null,
-    loading: false,
-    error: null,
-    token: localStorage.getItem("token"),
-  },
+ initialState: {
+  user: null,
+  role: null,
+  loading: false,
+  error: null,
+  token: localStorage.getItem("token"),
+},
 
   reducers: {
     logout: (state) => {
@@ -55,6 +58,7 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload;
         state.token = action.payload.token;
+        state.role = action.payload.role;
         localStorage.setItem("token", action.payload.token);
       })
 

@@ -330,6 +330,15 @@ packageCtlr.removePackage = async (req, res) => {
   }
 };
 
+packageCtlr.listPublic = async (req, res) => {
+  try {
+    const packages = await Package.find({ status: "approved" });
+    res.json(packages);
+  } catch (err) {
+    res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
 module.exports = packageCtlr;
 
 /*Note: 

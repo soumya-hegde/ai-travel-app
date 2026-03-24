@@ -10,12 +10,19 @@ import PackageProvider from "./context/PackageProvider";
 
 import "./index.css";
 
+// ReactDOM.createRoot(document.getElementById("root")).render(
+//   <Provider store={store}>
+//     <BrowserRouter>
+//       <PackageProvider>
+//         <App />
+//       </PackageProvider>
+//     </BrowserRouter>
+//   </Provider>,
+// );
 ReactDOM.createRoot(document.getElementById("root")).render(
   <Provider store={store}>
     <BrowserRouter>
-      <PackageProvider>
-        <App />
-      </PackageProvider>
+      <App />
     </BrowserRouter>
   </Provider>,
 );

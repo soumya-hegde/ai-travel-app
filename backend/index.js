@@ -1,5 +1,5 @@
 require('dotenv').config();
-
+const cors = require("cors");
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 5000;
@@ -23,6 +23,10 @@ const authorizeUser = require('./app/middlewares/authorize');
 const upload = require("./app/middlewares/upload");
 require("./app/jobs/bookingCron");
 
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true,
+}));
 
 
 app.use(morgan('common', {
@@ -79,6 +83,9 @@ app.get('/api/view-package', authenticateUser, authorizeUser(['admin','agent','u
 app.put("/api/update-package/:packageId",authenticateUser, authorizeUser(["agent"]), packageCtlr.packageUpdate);
 //Remove the Itinerary
 app.delete("/api/remove-package/:packageId",authenticateUser, authorizeUser(["admin", "agent"]), packageCtlr.removePackage);
+// Public list of packages (approved only)
+app.get("/api/public-packages", packageCtlr.listPublic);
+
 
 //create booking
 app.post('/api/create-booking', authenticateUser, authorizeUser(['user']), bookingCtlr.createBooking);
@@ -86,6 +93,9 @@ app.post('/api/create-booking', authenticateUser, authorizeUser(['user']), booki
 app.get('/api/view-booking', authenticateUser, authorizeUser(['user','agent','admin']), bookingCtlr.viewBooking);
 //cancel booking
 app.get('/api/cancel-booking', authenticateUser, authorizeUser(['admin']), bookingCtlr.cancelBooking);
+//send email notification for booking cancellation
+app.post(
+  '/api/bookings/:id/cancel-request', authenticateUser, authorizeUser(["user"]), bookingCtlr.cancelRequest);
 
 
 app.listen(port, () => {
