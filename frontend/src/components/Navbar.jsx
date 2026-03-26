@@ -45,20 +45,31 @@ export default function Navbar() {
     if (token) fetchUser();
   }, [token]);
 
+  const handleLogoClick = () => {
+    if (token) navigate("/dashboard/home");
+    else navigate("/");
+  };
+
   return (
     <nav className="bg-white/70 backdrop-blur-md shadow-md border-b sticky top-0 z-50">
       <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
-        {/* 🔥 LOGO → HOME */}
         <h1
-          onClick={() => navigate("/")}
+          onClick={handleLogoClick}
           className="text-xl font-bold text-blue-600 cursor-pointer hover:scale-105 transition"
         >
-          ✈️ AI Travel Planner
+          AI Travel Planner
         </h1>
 
-        {/* RIGHT SIDE */}
         <div className="flex items-center gap-6 text-sm font-medium text-gray-700">
-          {/* ✅ ONLY SHOW ON HOME */}
+          {token && (
+            <button
+              onClick={() => navigate("/dashboard/home")}
+              className="hover:text-blue-600 transition"
+            >
+              Dashboard
+            </button>
+          )}
+
           {isHomePage && (
             <>
               <button
@@ -85,7 +96,6 @@ export default function Navbar() {
             </>
           )}
 
-          {/* ✅ PROFILE ONLY IF LOGGED IN */}
           {token && (
             <div className="relative" ref={menuRef}>
               <button

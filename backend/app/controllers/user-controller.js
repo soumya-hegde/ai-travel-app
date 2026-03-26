@@ -1,4 +1,5 @@
 const User = require("../models/user-model");
+const sendMail = require("../utils/mailer");
 const bcryptjs = require("bcryptjs");
 const {
   userUpdateValidationSchema,
@@ -133,6 +134,7 @@ userCtlr.updateUserPassword = async (req, res) => {
 };
 
 //forgot password - before login
+//forgot password - before login
 userCtlr.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -151,16 +153,21 @@ userCtlr.forgotPassword = async (req, res) => {
     const salt = await bcryptjs.genSalt();
     const hashedOtp = await bcryptjs.hash(otp, salt);
 
-    // Store OTP in DB
+    // Clear old OTPs, then store new OTP for 1 minute
+    await Otp.deleteMany({ userId: user._id });
+
     await Otp.create({
       userId: user._id,
       otp: hashedOtp,
-      expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
+      expiresAt: Date.now() + 1 * 60 * 1000, // 1 minute
     });
 
     // Send OTP to email
-    //await sendOtpToEmail(email, otp);
-    console.log("OTP for", email, ":", otp);
+    await sendMail({
+      to: email,
+      subject: "Your Password Reset OTP",
+      text: `Your OTP is ${otp}. It expires in 1 minute.`,
+    });
 
     return res.status(200).send({
       success: true,
@@ -174,6 +181,7 @@ userCtlr.forgotPassword = async (req, res) => {
     });
   }
 };
+
 
 userCtlr.verifyOtp = async (req, res) => {
   try {

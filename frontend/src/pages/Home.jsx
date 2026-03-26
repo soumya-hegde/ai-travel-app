@@ -8,9 +8,6 @@ export default function Home() {
   const navigate = useNavigate();
   const token = useSelector((state) => state.auth.token);
 
-  const fallbackImage =
-    "https://via.placeholder.com/600x400?text=Image+Not+Available";
-
   const heroImages = [
     "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
     "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
@@ -30,7 +27,6 @@ export default function Home() {
     const fetchPackages = async () => {
       try {
         const res = await API.get("/public-packages");
-
         const data = res.data?.packages || res.data || [];
         setPackages(Array.isArray(data) ? data : []);
       } catch {
@@ -40,8 +36,17 @@ export default function Home() {
     fetchPackages();
   }, []);
 
+  const handleBookNow = (pkgId) => {
+    const target = `/dashboard/package/${pkgId}`;
+    if (token) {
+      navigate(target);
+      return;
+    }
+    navigate("/login", { state: { from: target } });
+  };
+
   return (
-    <div>
+    <div className="bg-gray-50">
       {/* HERO */}
       <section
         className="h-[60vh] bg-cover bg-center flex items-center"
@@ -55,7 +60,7 @@ export default function Home() {
           {!token && (
             <button
               onClick={() => navigate("/login")}
-              className="mt-6 w-fit inline-flex items-center rounded-md bg-white/90 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-white"
+              className="mt-6 w-fit rounded-lg bg-white px-6 py-2 font-semibold text-slate-800 hover:bg-gray-100 transition"
             >
               Login
             </button>
@@ -64,23 +69,57 @@ export default function Home() {
       </section>
 
       {/* PACKAGES */}
-      <section className="p-10">
-        <h2 className="text-2xl font-bold mb-6">Popular Packages</h2>
+      <section className="px-10 py-14 max-w-6xl mx-auto">
+        <h2 className="text-3xl font-bold mb-2 text-gray-800">
+          Popular Packages
+        </h2>
+        <p className="text-gray-500 mb-8">
+          Explore our curated travel experiences
+        </p>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {packages.map((pkg) => (
-            <div key={pkg._id} className="border rounded-lg shadow">
-              <img
-                src={pkg.packageImages?.[0] || fallbackImage}
-                className="h-40 w-full object-cover"
-              />
-              <div className="p-4">
-                <h3 className="font-semibold">{pkg.packageName}</h3>
-                <p>{pkg.packageDestination}</p>
+            <div
+              key={pkg._id}
+              className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition duration-300 overflow-hidden hover:-translate-y-2"
+            >
+              {/* IMAGE */}
+              <div className="h-48 w-full bg-white flex items-center justify-center overflow-hidden">
+                {pkg.packageImages?.[0] ? (
+                  <img
+                    src={pkg.packageImages[0]}
+                    alt={pkg.packageName}
+                    className="h-full w-full object-cover transform group-hover:scale-110 transition duration-500"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                ) : null}
+              </div>
 
+              {/* CONTENT */}
+              <div className="p-5">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  {pkg.packageName}
+                </h3>
+
+                <p className="text-sm text-gray-500 mt-1">
+                  {pkg.packageDestination}
+                </p>
+
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-sm text-gray-600">
+                    {pkg.packageDays} days
+                  </span>
+                  <span className="font-semibold text-blue-700">
+                    ₹{pkg.packagePrice}
+                  </span>
+                </div>
+
+                {/* BUTTON */}
                 <button
-                  onClick={() => navigate("/login")}
-                  className="mt-3 bg-blue-600 text-white px-3 py-1 rounded"
+                  onClick={() => handleBookNow(pkg._id || pkg.id)}
+                  className="mt-5 w-full rounded-lg bg-[#0B3C5D] py-2 text-white font-medium hover:bg-black transition"
                 >
                   Book Now
                 </button>
@@ -90,14 +129,26 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="about" className="p-10">
-        <h2 className="text-xl font-bold">About</h2>
-        <p>AI powered travel planning</p>
+      {/* ABOUT */}
+      <section id="about" className="bg-white py-16 px-10">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-gray-800">About Us</h2>
+          <p className="text-gray-600 mt-4">
+            We use AI to create personalized travel plans based on your
+            interests, time, and budget â€” making your trips smarter and
+            hassle-free.
+          </p>
+        </div>
       </section>
 
-      <section id="contact" className="p-10">
-        <h2 className="text-xl font-bold">Contact</h2>
-        <p>Email: support@travel.com</p>
+      {/* CONTACT */}
+      <section id="contact" className="bg-gray-100 py-16 px-10">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-gray-800">Contact Us</h2>
+          <p className="text-gray-600 mt-4">
+            Email: support@aitravelplanner.com
+          </p>
+        </div>
       </section>
     </div>
   );

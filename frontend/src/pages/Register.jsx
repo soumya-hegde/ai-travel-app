@@ -4,13 +4,14 @@ import API from "../api/axios";
 
 export default function Register() {
   const navigate = useNavigate();
-
   const [isAgent, setIsAgent] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
   const [form, setForm] = useState({
     username: "",
     email: "",
     phone: "",
+    password: "",
     agencyName: "",
     address: "",
   });
@@ -20,16 +21,15 @@ export default function Register() {
 
   const validate = () => {
     const err = {};
-
     if (!form.username) err.username = "Username required";
     if (!form.email) err.email = "Email required";
-    if (!form.phone) err.phone = "Phone required";
+    if (!form.password) err.password = "Password required";
 
     if (isAgent) {
+      if (!form.phone) err.phone = "Phone required";
       if (!form.agencyName) err.agencyName = "Agency required";
       if (!form.address) err.address = "Address required";
     }
-
     return err;
   };
 
@@ -38,14 +38,32 @@ export default function Register() {
 
     const err = validate();
     setErrors(err);
-
     if (Object.keys(err).length > 0) return;
 
     try {
       const endpoint = isAgent ? "/agents/register" : "/users/register";
 
-      await API.post(endpoint, form);
+      let payload;
 
+      if (isAgent) {
+        payload = {
+          username: form.username,
+          email: form.email,
+          phone: form.phone,
+          password: form.password,
+          agencyName: form.agencyName,
+          address: form.address,
+        };
+      } else {
+        payload = {
+          username: form.username,
+          email: form.email,
+          // phone: form.phone,
+          password: form.password,
+        };
+      }
+
+      await API.post(endpoint, payload);
       navigate("/login");
     } catch (error) {
       setServerError(error?.response?.data?.error || "Registration failed");
@@ -62,7 +80,7 @@ export default function Register() {
     >
       <div className="backdrop-blur-lg bg-white/20 p-8 rounded-2xl shadow-2xl w-[420px] border border-white/30">
         <h2 className="text-3xl font-bold text-white text-center mb-6">
-          Create Account 🌍
+          Create Account
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -84,26 +102,41 @@ export default function Register() {
             <p className="text-red-300 text-sm">{errors.email}</p>
           )}
 
-          <input
-            placeholder="Phone"
-            className="w-full p-3 rounded-lg bg-white/80"
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          />
-          {errors.phone && (
-            <p className="text-red-300 text-sm">{errors.phone}</p>
+          <div className="relative">
+            <input
+              type={showPass ? "text" : "password"}
+              placeholder="Password"
+              className="w-full p-3 pr-20 rounded-lg bg-white/80"
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPass((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-blue-900"
+            >
+              {showPass ? "Hide" : "Show"}
+            </button>
+          </div>
+          {errors.password && (
+            <p className="text-red-300 text-sm">{errors.password}</p>
           )}
 
-          {/* AGENT EXTRA */}
           {isAgent && (
             <>
+              <input
+                placeholder="Phone"
+                className="w-full p-3 rounded-lg bg-white/80"
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              />
+              {errors.phone && (
+                <p className="text-red-300 text-sm">{errors.phone}</p>
+              )}
+
               <input
                 placeholder="Agency Name"
                 className="w-full p-3 rounded-lg bg-white/80"
                 onChange={(e) =>
-                  setForm({
-                    ...form,
-                    agencyName: e.target.value,
-                  })
+                  setForm({ ...form, agencyName: e.target.value })
                 }
               />
               {errors.agencyName && (
@@ -113,12 +146,7 @@ export default function Register() {
               <textarea
                 placeholder="Address"
                 className="w-full p-3 rounded-lg bg-white/80"
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    address: e.target.value,
-                  })
-                }
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
               />
               {errors.address && (
                 <p className="text-red-300 text-sm">{errors.address}</p>
@@ -126,11 +154,10 @@ export default function Register() {
             </>
           )}
 
-          {/* TOGGLE */}
           <button
             type="button"
             onClick={() => setIsAgent(!isAgent)}
-            className="text-white text-sm underline  hover:text-black"
+            className="text-white text-sm underline hover:text-black"
           >
             {isAgent ? "Register as User" : "Are you an agent? Register here"}
           </button>
@@ -144,7 +171,7 @@ export default function Register() {
           </button>
         </form>
 
-        <p className="text-white text-sm text-center mt-4  hover:text-black">
+        <p className="text-white text-sm text-center mt-4 hover:text-black">
           Already have an account?{" "}
           <span
             onClick={() => navigate("/login")}

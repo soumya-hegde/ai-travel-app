@@ -32,7 +32,7 @@ export default function DashboardHome() {
 
   if (loading) {
     return (
-      <div className="p-6 text-center text-gray-500">Loading packages…</div>
+      <div className="p-6 text-center text-gray-500">Loading packages...</div>
     );
   }
 
@@ -53,11 +53,11 @@ export default function DashboardHome() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-900">
+      <div className="mb-8 rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-50 p-6 shadow-sm">
+        <h2 className="text-2xl font-semibold text-slate-900">
           Available Packages
         </h2>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-slate-500">
           Browse and choose your next trip
         </p>
       </div>

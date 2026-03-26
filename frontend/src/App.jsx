@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import ForgotPassword from "./pages/ForgotPassword";
 
 import Navbar from "./components/Navbar";
 import RequireAuth from "./components/RequireAuth";
@@ -32,7 +33,7 @@ function App() {
           path="/register"
           element={!token ? <Register /> : <Navigate to="/dashboard/home" />}
         />
-
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route
           path="/dashboard"
           element={

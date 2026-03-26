@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { loginUser } from "../slices/authSlice";
 
 export default function Login() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from;
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [showPass, setShowPass] = useState(false);
 
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
@@ -24,15 +24,17 @@ export default function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     const err = validate();
     setErrors(err);
-
     if (Object.keys(err).length > 0) return;
 
     dispatch(loginUser(form))
       .unwrap()
       .then((res) => {
+        if (from) {
+          navigate(from, { replace: true });
+          return;
+        }
         if (res.role === "agent") navigate("/agent-dashboard");
         else navigate("/dashboard");
       })
@@ -51,11 +53,10 @@ export default function Login() {
     >
       <div className="backdrop-blur-lg bg-white/20 p-8 rounded-2xl shadow-2xl w-96 border border-white/30">
         <h2 className="text-3xl font-bold text-white text-center mb-6">
-          Welcome Back ✈️
+          Welcome Back
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* EMAIL */}
           <div>
             <input
               type="email"
@@ -68,31 +69,45 @@ export default function Login() {
             )}
           </div>
 
-          {/* PASSWORD */}
-          <div>
+          <div className="relative">
             <input
-              type="password"
+              type={showPass ? "text" : "password"}
               placeholder="Password"
-              className="w-full p-3 rounded-lg bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 pr-20 rounded-lg bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500"
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
+            <button
+              type="button"
+              onClick={() => setShowPass((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-blue-900"
+            >
+              {showPass ? "Hide" : "Show"}
+            </button>
             {errors.password && (
               <p className="text-red-300 text-sm mt-1">{errors.password}</p>
             )}
+          </div>
+
+          <div className="text-right">
+            <button
+              type="button"
+              onClick={() => navigate("/forgot-password")}
+              className="text-sm text-white underline hover:text-black"
+            >
+              Forgot password?
+            </button>
           </div>
 
           {serverError && (
             <p className="text-red-300 text-center text-sm">{serverError}</p>
           )}
 
-          {/* BUTTON */}
           <button className="w-full bg-blue-950 text-white py-2 rounded-lg font-semibold hover:bg-black">
             Login
           </button>
         </form>
 
-        {/* REGISTER LINK */}
-        <p className="text-white text-sm text-center mt-4  hover:text-black">
+        <p className="text-white text-sm text-center mt-4 hover:text-black">
           Don’t have an account?{" "}
           <span
             onClick={() => navigate("/register")}
