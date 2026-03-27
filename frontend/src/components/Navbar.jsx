@@ -2,17 +2,19 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useState, useRef, useEffect } from "react";
 import { logout } from "../slices/authSlice";
-import API from "../api/axios";
 
 export default function Navbar() {
-  const [username, setUsername] = useState("");
-
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const token = useSelector((state) => state.auth.token);
+
+  const { token, user } = useSelector((state) => state.auth);
 
   const isHomePage = location.pathname === "/";
+  const isAuthPage =
+    location.pathname === "/login" ||
+    location.pathname === "/register" ||
+    location.pathname === "/forgot-password";
 
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -22,6 +24,12 @@ export default function Navbar() {
     navigate("/");
   };
 
+  const handleLogoClick = () => {
+    if (token) navigate("/dashboard/home");
+    else navigate("/");
+  };
+
+  // close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -32,45 +40,33 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await API.get("/users/account");
-        setUsername(res.data.username || "");
-      } catch {
-        setUsername("");
-      }
-    };
-
-    if (token) fetchUser();
-  }, [token]);
-
-  const handleLogoClick = () => {
-    if (token) navigate("/dashboard/home");
-    else navigate("/");
-  };
+  const username = user?.username || "";
 
   return (
-    <nav className="bg-white/70 backdrop-blur-md shadow-md border-b sticky top-0 z-50">
-      <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
+    <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/60 border-b shadow-sm">
+      <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+        {/* LOGO */}
         <h1
           onClick={handleLogoClick}
-          className="text-xl font-bold text-blue-600 cursor-pointer hover:scale-105 transition"
+          className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-700 bg-clip-text text-transparent cursor-pointer tracking-wide hover:scale-105 transition"
         >
           AI Travel Planner
         </h1>
 
-        <div className="flex items-center gap-6 text-sm font-medium text-gray-700">
-          {token && (
+        {/* NAV ITEMS */}
+        <div className="flex items-center gap-6 text-sm font-medium">
+          {/* Dashboard */}
+          {token && !isAuthPage && (
             <button
               onClick={() => navigate("/dashboard/home")}
-              className="hover:text-blue-600 transition"
+              className="relative text-gray-700 hover:text-blue-600 transition after:block after:h-[2px] after:bg-blue-600 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left"
             >
               Dashboard
             </button>
           )}
 
-          {isHomePage && (
+          {/* About + Contact */}
+          {isHomePage && !isAuthPage && (
             <>
               <button
                 onClick={() =>
@@ -78,7 +74,7 @@ export default function Navbar() {
                     .getElementById("about")
                     ?.scrollIntoView({ behavior: "smooth" })
                 }
-                className="hover:text-blue-600 transition"
+                className="text-gray-700 hover:text-blue-600 transition"
               >
                 About
               </button>
@@ -89,39 +85,56 @@ export default function Navbar() {
                     .getElementById("contact")
                     ?.scrollIntoView({ behavior: "smooth" })
                 }
-                className="hover:text-blue-600 transition"
+                className="text-gray-700 hover:text-blue-600 transition"
               >
                 Contact
               </button>
             </>
           )}
 
-          {token && (
+          {/* LOGIN */}
+          {!token && !isAuthPage && (
+            <button
+              onClick={() => navigate("/login")}
+              className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md hover:scale-105 hover:shadow-lg transition"
+            >
+              Login
+            </button>
+          )}
+
+          {/* PROFILE */}
+          {token && !isAuthPage && (
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setOpen((v) => !v)}
-                className="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md hover:scale-105 transition"
+                className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white flex items-center justify-center shadow-md hover:scale-110 transition"
               >
-                <span className="text-sm font-semibold">
+                <span className="font-semibold">
                   {username ? username.charAt(0).toUpperCase() : "U"}
                 </span>
               </button>
 
               {open && (
-                <div className="absolute right-0 mt-2 w-40 rounded-lg border bg-white shadow-lg">
+                <div className="absolute right-0 mt-3 w-44 rounded-xl bg-white shadow-xl border overflow-hidden animate-fadeIn">
+                  <div className="px-4 py-3 border-b bg-gray-50">
+                    <p className="text-sm font-semibold text-gray-800">
+                      {username || "User"}
+                    </p>
+                  </div>
+
                   <button
                     onClick={() => {
                       setOpen(false);
                       navigate("/dashboard/profile");
                     }}
-                    className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-50"
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition"
                   >
                     Profile
                   </button>
 
                   <button
                     onClick={handleLogout}
-                    className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
                   >
                     Logout
                   </button>

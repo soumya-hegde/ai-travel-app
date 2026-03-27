@@ -16,6 +16,14 @@ export default function PackageDetails() {
 
   const handleBookNow = async () => {
     try {
+      const selectedDate = new Date(travelDate);
+
+      // 🚫 Prevent invalid booking
+      if (selectedDate < minDateObj) {
+        setBookingError(`You can only book after ${duration} days from today`);
+        return;
+      }
+
       setBookingLoading(true);
       setBookingError("");
       setBookingStatus("");
@@ -26,10 +34,13 @@ export default function PackageDetails() {
       });
 
       setBookingStatus("Booking successful!");
-      // redirect after success
       setTimeout(() => navigate("/dashboard/bookings"), 1200);
     } catch (err) {
-      setBookingError(err.response?.data?.error || err.message);
+      if (err.response?.status === 400) {
+        setBookingError("You have already booked for this date");
+      } else {
+        setBookingError("Something went wrong. Please try again.");
+      }
     } finally {
       setBookingLoading(false);
     }
@@ -73,59 +84,90 @@ export default function PackageDetails() {
       ? pkg.packageImages[0]
       : "https://picsum.photos/800/400?fallback";
 
+  // Block booking for today + package duration
+  const today = new Date();
+  const duration = Number(pkg.packageDays || 0);
+
+  const minDateObj = new Date();
+  minDateObj.setDate(today.getDate() + duration + 1);
+
+  const minDate = minDateObj.toISOString().split("T")[0];
+
   return (
-    <div className="p-6">
-      <div className="mx-auto max-w-3xl overflow-hidden rounded-2xl border bg-white shadow">
-        <img
-          src={image}
-          alt={pkg.packageName}
-          onError={(e) => {
-            e.currentTarget.src = "https://picsum.photos/800/400?fallback";
-          }}
-        />
+    <div className="bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen py-10 px-6">
+      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10">
+        {/* LEFT: IMAGE */}
+        <div className="rounded-2xl overflow-hidden shadow-lg bg-white">
+          <img
+            src={image}
+            alt={pkg.packageName}
+            onError={(e) => {
+              e.currentTarget.src = "https://picsum.photos/800/400?fallback";
+            }}
+            className="w-full h-[420px] object-cover hover:scale-105 transition duration-500"
+          />
+        </div>
 
-        <div className="p-6">
-          <h1 className="text-3xl font-semibold text-gray-900">
-            {pkg.packageName}
-          </h1>
-          <p className="mt-2 text-gray-600">{pkg.packageDescription}</p>
+        {/* RIGHT: DETAILS */}
+        <div className="flex flex-col justify-between">
+          {/* TEXT CONTENT */}
+          <div>
+            <h1 className="text-4xl font-bold text-gray-800 leading-tight">
+              {pkg.packageName}
+            </h1>
 
-          <div className="mt-4 flex items-center justify-between">
-            <span className="text-lg font-semibold text-blue-600">
-              ₹{pkg.packagePrice}
-            </span>
-            <span className="text-sm text-gray-500">
-              {pkg.packageDays} days
-            </span>
+            <p className="mt-4 text-gray-600 text-lg leading-relaxed">
+              {pkg.packageDescription}
+            </p>
+
+            {/* PRICE + DURATION */}
+            <div className="mt-6 flex items-center justify-between border-t pt-4">
+              <span className="text-2xl font-bold text-blue-700">
+                ₹{pkg.packagePrice}
+              </span>
+
+              <span className="text-gray-500 font-medium">
+                {pkg.packageDays} days
+              </span>
+            </div>
           </div>
 
-          <div className="mt-6 space-y-3">
-            <label className="block text-sm font-medium text-gray-700">
-              Travel Date
+          {/* BOOKING CARD */}
+          <div className="mt-10 bg-white border rounded-2xl shadow-md p-6 space-y-4">
+            <label className="text-gray-700 font-medium">
+              Select Travel Date
             </label>
+
             <input
               type="date"
               value={travelDate}
+              min={minDate}
               onChange={(e) => setTravelDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-700"
             />
 
             <button
               onClick={handleBookNow}
               disabled={!travelDate || bookingLoading}
-              className="w-full rounded-lg bg-blue-600 py-3 text-white font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className={`w-full py-3 rounded-lg text-white font-semibold transition
+              ${
+                travelDate && !bookingLoading
+                  ? "bg-blue-950 hover:bg-black"
+                  : "bg-gray-300 cursor-not-allowed"
+              }`}
             >
               {bookingLoading ? "Booking..." : "Book Now"}
             </button>
 
+            {/* STATUS */}
             {bookingStatus && (
-              <div className="rounded-md bg-green-100 px-3 py-2 text-green-700 text-sm">
+              <div className="rounded-lg bg-green-100 px-4 py-2 text-green-700 text-sm">
                 {bookingStatus}
               </div>
             )}
 
             {bookingError && (
-              <div className="rounded-md bg-red-100 px-3 py-2 text-red-700 text-sm">
+              <div className="rounded-lg bg-red-100 px-4 py-2 text-red-700 text-sm">
                 {bookingError}
               </div>
             )}

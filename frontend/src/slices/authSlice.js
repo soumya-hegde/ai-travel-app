@@ -7,59 +7,61 @@ export const loginUser = createAsyncThunk(
     try {
       const response = await API.post("/login", data);
 
-      localStorage.setItem("token", response.data.token);
+     const { token, user, role } = response.data;
 
-      return response.data; // should include role
+      localStorage.setItem("token", token);
+      if (user) localStorage.setItem("user", JSON.stringify(user));
+      if (role) localStorage.setItem("role", role);
+
+
+      return { token, user, role };
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response.data);
+      return thunkAPI.rejectWithValue(error.response?.data || {});
     }
   }
 );
-
-export const registerUser = createAsyncThunk(
-  "auth/registerUser",
-  async (data, thunkAPI) => {
-    try {
-      const response = await API.post("/users/register", data);
-      return response.data;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.response.data);
-    }
+const safeParse = (value) => {
+  if (!value || value === "undefined") return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
   }
-);
+};
 
 const authSlice = createSlice({
   name: "auth",
-
- initialState: {
-  user: null,
-  role: null,
-  loading: false,
-  error: null,
-  token: localStorage.getItem("token"),
-},
+  initialState: {
+    token: localStorage.getItem("token") || null,
+    user: safeParse(localStorage.getItem("user")),
+    role:
+      localStorage.getItem("role") && localStorage.getItem("role") !== "undefined"
+        ? localStorage.getItem("role")
+        : null,
+    loading: false,
+    error: null,
+  },
 
   reducers: {
     logout: (state) => {
-      localStorage.removeItem("token");
+      localStorage.clear(); // ✅ clean everything
       state.token = null;
       state.user = null;
+      state.role = null;
     },
   },
 
   extraReducers: (builder) => {
     builder
-
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
       })
 
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
         state.token = action.payload.token;
+        state.user = action.payload.user;
         state.role = action.payload.role;
-        localStorage.setItem("token", action.payload.token);
       })
 
       .addCase(loginUser.rejected, (state, action) => {
@@ -70,5 +72,4 @@ const authSlice = createSlice({
 });
 
 export const { logout } = authSlice.actions;
-
 export default authSlice.reducer;
