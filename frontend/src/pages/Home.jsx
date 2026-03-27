@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useNavigate, Navigate } from "react-router-dom";
+import { useSelector } from "react-redux"; // Added to sync with Auth state
 import API from "../api/axios";
 
 export default function Home() {
   const [packages, setPackages] = useState([]);
   const navigate = useNavigate();
-  const token = useSelector((state) => state.auth.token);
+
+  // LOGIC: Get token and role from Redux to stay in sync with Navbar
+  const { token, role } = useSelector((state) => state.auth);
 
   const heroImages = [
     "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
@@ -15,6 +17,13 @@ export default function Home() {
   ];
 
   const [heroIndex, setHeroIndex] = useState(0);
+
+  // LOGIC: If a user is already logged in, redirect them to their dashboard automatically
+  if (token) {
+    const dashboardPath =
+      role === "agent" ? "/agent-dashboard" : "/dashboard/home";
+    return <Navigate to={dashboardPath} replace />;
+  }
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -47,7 +56,7 @@ export default function Home() {
 
   return (
     <div className="bg-gray-50">
-      {/* HERO */}
+      {/* HERO - STYLING KEPT EXACTLY SAME */}
       <section
         className="h-[60vh] bg-cover bg-center flex items-center"
         style={{
@@ -57,6 +66,7 @@ export default function Home() {
         <div className="bg-black/50 w-full h-full flex flex-col justify-center px-10 text-white">
           <h1 className="text-4xl font-bold">Plan Smarter. Travel Better.</h1>
 
+          {/* LOGIC: Button only shows if NO token is present */}
           {!token && (
             <button
               onClick={() => navigate("/login")}
@@ -68,7 +78,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* PACKAGES */}
+      {/* PACKAGES - STYLING KEPT EXACTLY SAME */}
       <section className="px-10 py-14 max-w-6xl mx-auto">
         <h2 className="text-3xl font-bold mb-2 text-gray-800">
           Popular Packages
@@ -129,19 +139,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ABOUT */}
+      {/* ABOUT - STYLING KEPT EXACTLY SAME */}
       <section id="about" className="bg-white py-16 px-10">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-gray-800">About Us</h2>
           <p className="text-gray-600 mt-4">
             We use AI to create personalized travel plans based on your
-            interests, time, and budget â€” making your trips smarter and
+            interests, time, and budget — making your trips smarter and
             hassle-free.
           </p>
         </div>
       </section>
 
-      {/* CONTACT */}
+      {/* CONTACT - STYLING KEPT EXACTLY SAME */}
       <section id="contact" className="bg-gray-100 py-16 px-10">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-gray-800">Contact Us</h2>

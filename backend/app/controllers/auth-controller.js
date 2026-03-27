@@ -65,7 +65,15 @@ authCtlr.login = async (req, res) => {
   const token = jwt.sign(tokenData, process.env.JWT_SECRET, {
     expiresIn: "2d",
   });
-  res.json({ token: token });
+  res.json({ 
+    token: token, 
+    role: userPresent.role, // This allows the frontend to know the role immediately
+    user: { 
+        username: userPresent.username, 
+        email: userPresent.email,
+        _id: userPresent._id 
+    } 
+});
 };
 
 //profile details

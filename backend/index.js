@@ -67,8 +67,10 @@ app.delete('/api/users/:userId', authenticateUser, authorizeUser(["user"]), user
 //Remove account - agent
 app.delete('/api/agents/:agentId', authenticateUser, authorizeUser(["agent"]), agentCtlr.removeAgent);
 
-//Create Itinerary 
-app.post('/api/create-package', authenticateUser, authorizeUser(['agent']),packageCtlr.createPackage);
+// //Create Itinerary 
+// app.post('/api/create-package', authenticateUser, authorizeUser(['agent']),packageCtlr.createPackage);
+// 'packageImages' is the key name, 5 is the limit
+app.post('/api/create-package', authenticateUser, authorizeUser(['agent']), upload.array('packageImages', 5), packageCtlr.createPackage);
 //approve an itinerary
 app.patch('/api/approve-package/:packageId', authenticateUser,  authorizeUser(['admin']), packageCtlr.adminApprove);
 //Bulk Approval of itineraries

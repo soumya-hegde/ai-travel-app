@@ -29,15 +29,19 @@ const safeParse = (value) => {
   }
 };
 
+// Add this helper to clean up localStorage values
+const getSavedItem = (key) => {
+  const item = localStorage.getItem(key);
+  if (!item || item === "undefined" || item === "null") return null;
+  return item;
+};
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    token: localStorage.getItem("token") || null,
-    user: safeParse(localStorage.getItem("user")),
-    role:
-      localStorage.getItem("role") && localStorage.getItem("role") !== "undefined"
-        ? localStorage.getItem("role")
-        : null,
+    token: getSavedItem("token"), // Use the helper
+    user: safeParse(getSavedItem("user")), // Use the helper
+    role: getSavedItem("role"), // Use the helper
     loading: false,
     error: null,
   },

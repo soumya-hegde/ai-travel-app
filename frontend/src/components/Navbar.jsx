@@ -8,7 +8,8 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { token, user } = useSelector((state) => state.auth);
+  // FIX: Added 'role' to the destructuring here
+  const { token, user, role } = useSelector((state) => state.auth);
 
   const isHomePage = location.pathname === "/";
   const isAuthPage =
@@ -24,12 +25,16 @@ export default function Navbar() {
     navigate("/");
   };
 
+  // This function now has access to 'role'
   const handleLogoClick = () => {
-    if (token) navigate("/dashboard/home");
-    else navigate("/");
+    if (token) {
+      if (role === "agent") navigate("/agent-dashboard/home");
+      else navigate("/dashboard/home");
+    } else {
+      navigate("/");
+    }
   };
 
-  // close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -55,17 +60,17 @@ export default function Navbar() {
 
         {/* NAV ITEMS */}
         <div className="flex items-center gap-6 text-sm font-medium">
-          {/* Dashboard */}
+          {/* Dashboard Link - Updated logic to handle different roles */}
           {token && !isAuthPage && (
             <button
-              onClick={() => navigate("/dashboard/home")}
+              onClick={handleLogoClick}
               className="relative text-gray-700 hover:text-blue-600 transition after:block after:h-[2px] after:bg-blue-600 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left"
             >
               Dashboard
             </button>
           )}
 
-          {/* About + Contact */}
+          {/* About + Contact (only on landing page) */}
           {isHomePage && !isAuthPage && (
             <>
               <button
@@ -78,7 +83,6 @@ export default function Navbar() {
               >
                 About
               </button>
-
               <button
                 onClick={() =>
                   document
@@ -92,7 +96,7 @@ export default function Navbar() {
             </>
           )}
 
-          {/* LOGIN */}
+          {/* LOGIN BUTTON */}
           {!token && !isAuthPage && (
             <button
               onClick={() => navigate("/login")}
@@ -102,7 +106,7 @@ export default function Navbar() {
             </button>
           )}
 
-          {/* PROFILE */}
+          {/* PROFILE DROPDOWN */}
           {token && !isAuthPage && (
             <div className="relative" ref={menuRef}>
               <button
@@ -120,12 +124,19 @@ export default function Navbar() {
                     <p className="text-sm font-semibold text-gray-800">
                       {username || "User"}
                     </p>
+                    <p className="text-[10px] uppercase text-blue-600 font-bold">
+                      {role}
+                    </p>
                   </div>
 
                   <button
                     onClick={() => {
                       setOpen(false);
-                      navigate("/dashboard/profile");
+                      const profilePath =
+                        role === "agent"
+                          ? "/agent-dashboard/profile"
+                          : "/dashboard/profile";
+                      navigate(profilePath);
                     }}
                     className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition"
                   >

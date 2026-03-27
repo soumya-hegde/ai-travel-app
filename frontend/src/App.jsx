@@ -14,6 +14,10 @@ import DashboardHome from "./pages/dashboard/DashboardHome";
 import Bookings from "./pages/dashboard/Bookings";
 import Profile from "./pages/dashboard/Profile";
 import PackageDetails from "./pages/dashboard/PackageDetails";
+import AgentProfile from "./pages/agent/AgentProfile";
+import AgentLayout from "./pages/agent/AgentLayout";
+import CreatePackage from "./pages/agent/CreatePackage";
+import MyPackages from "./pages/agent/MyPackages";
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -24,7 +28,6 @@ function App() {
 
       <Routes>
         <Route path="/" element={<Home />} />
-
         <Route
           path="/login"
           element={!token ? <Login /> : <Navigate to="/dashboard/home" />}
@@ -37,7 +40,9 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <RequireAuth>
+            <RequireAuth permittedRoles={["user"]}>
+              {" "}
+              {/* Only 'user' can enter here */}
               <DashboardLayout />
             </RequireAuth>
           }
@@ -47,6 +52,20 @@ function App() {
           <Route path="bookings" element={<Bookings />} />
           <Route path="profile" element={<Profile />} />
           <Route path="package/:id" element={<PackageDetails />} />
+        </Route>
+        <Route
+          path="/agent-dashboard"
+          element={
+            <RequireAuth permittedRoles={["agent"]}>
+              <AgentLayout />
+            </RequireAuth>
+          }
+        >
+          <Route index element={<Navigate to="home" replace />} />
+          <Route path="home" element={<DashboardHome />} />
+          <Route path="create-package" element={<CreatePackage />} />
+          <Route path="my-packages" element={<MyPackages />} />
+          <Route path="profile" element={<AgentProfile />} />
         </Route>
       </Routes>
     </div>

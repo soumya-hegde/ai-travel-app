@@ -24,8 +24,8 @@ packageCtlr.createPackage = async (req, res) => {
     package.status = "pending"; // always pending
 
     // handle image upload
-    if (req.file) {
-      package.image = req.file.path;
+    if (req.files && req.files.length > 0) {
+      package.packageImages = req.files.map(file => file.path);
     }
 
     await package.save();
