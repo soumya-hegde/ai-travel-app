@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
 import API from "../../api/axios";
+import { updateUserInfo } from "../../slices/authSlice";
 
 export default function Profile() {
   const [form, setForm] = useState({ username: "", email: "", _id: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const dispatch = useDispatch();
 
   const [passForm, setPassForm] = useState({
     oldPassword: "",
@@ -43,6 +46,10 @@ export default function Profile() {
         username: form.username,
         email: form.email,
       });
+
+      // Update Redux state immediately
+      dispatch(updateUserInfo({ username: form.username, email: form.email }));
+
       setMessage("Profile updated successfully.");
     } catch (err) {
       setMessage(err.response?.data?.error || err.message);

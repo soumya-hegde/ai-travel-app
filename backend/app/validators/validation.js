@@ -50,7 +50,10 @@ const packageValidationSchema = Joi.object({
   packageOffer: Joi.boolean().required(),
   packageRating: Joi.number().min(0).max(5).optional(),
   packageTotalRatings: Joi.number().integer().min(0).optional(),
-  packageImages: Joi.array().items(Joi.string().uri()).optional()
+  packageImages: Joi.array().items(Joi.string().uri()).optional(),
+  keyAttractions: Joi.array().items(Joi.string().trim()).min(1).required().messages({
+    "array.min": "Please add at least one key attraction"
+  }),
 });
 
 const changePasswordValidationSchema = Joi.object({

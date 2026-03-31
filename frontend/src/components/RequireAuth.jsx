@@ -18,9 +18,9 @@ export default function RequireAuth({ children, permittedRoles }) {
 
   // 2. If logged in but role is not allowed for this route
   if (permittedRoles && !permittedRoles.includes(role)) {
-    // Redirect agents to their dashboard, users to theirs
     if (role === "agent") return <Navigate to="/agent-dashboard" replace />;
-    return <Navigate to="/" replace />; // Or a 403 Forbidden page
+    if (role === "admin") return <Navigate to="/admin-dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return children;

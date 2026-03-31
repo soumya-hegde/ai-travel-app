@@ -1,8 +1,17 @@
 const Package = require("../models/package-model");
+const fs = require('fs');
+const path = require('path'); 
 const { packageValidationSchema } = require("../validators/validation");
 const packageCtlr = {};
 
 packageCtlr.createPackage = async (req, res) => {
+  if (req.body.keyAttractions) {
+    try {
+      req.body.keyAttractions = JSON.parse(req.body.keyAttractions);
+    } catch (e) {
+      // If it's already an array or invalid JSON, ignore error
+    }
+  }
   const body = req.body;
   const { error, value } = await packageValidationSchema.validate(body, {
     abortEarly: false,
@@ -25,7 +34,7 @@ packageCtlr.createPackage = async (req, res) => {
 
     // handle image upload
     if (req.files && req.files.length > 0) {
-      package.packageImages = req.files.map(file => file.path);
+       package.packageImages = req.files.map(file => file.filename);
     }
 
     await package.save();
@@ -187,13 +196,15 @@ packageCtlr.adminBulkReject = async (req, res) => {
 // View itineraries (Users view approved ones; Admin/Agent see all)
 packageCtlr.list = async (req, res) => {
   try {
-    let package;
+    let packages;
     if (req.role == "user") {
-      package = await Package.find({ status: "approved" });
+      packages = await Package.find({ status: "approved" })
+        .populate("createdBy", "username"); // Added populate
     } else {
-      package = await Package.find();
+      packages = await Package.find()
+        .populate("createdBy", "username"); // Added populate
     }
-    res.json(package);
+    res.json(packages);
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "something went wrong!!!" });
@@ -204,14 +215,19 @@ packageCtlr.list = async (req, res) => {
 packageCtlr.packageUpdate = async (req, res) => {
   try {
     if (req.role !== "agent") {
-      return res
-        .status(403)
-        .json({ message: "Only agents can update itineraries" });
+      return res.status(403).json({ message: "Only agents can update itineraries" });
+    }
+    
+    if (req.body.keyAttractions && typeof req.body.keyAttractions === 'string') {
+        try {
+          req.body.keyAttractions = JSON.parse(req.body.keyAttractions);
+        } catch (e) {
+          console.log("Error parsing attractions string");
+        }
     }
 
     const packageId = req.params.packageId;
     const agentId = req.userId;
-
     const package = await Package.findById(packageId);
 
     if (!package) {
@@ -219,51 +235,30 @@ packageCtlr.packageUpdate = async (req, res) => {
     }
 
     if (package.createdBy.toString() !== agentId) {
-      return res.status(403).json({
-        message: "You are not allowed to update this itinerary",
-      });
+      return res.status(403).json({ message: "You are not allowed to update this itinerary" });
     }
 
-    //Update allowed fields only
-    // const updatedPkg = await Package.findByIdAndUpdate(
-    //   packageId,
-    //   {
-    //     ...req.body,
-    //     status: "pending",        // reset approval
-    //     approvedBy: null,
-    //     approvedAt: null,
-    //     rejectedBy: null,
-    //     rejectedAt: null,
-    //     rejectionReason: null
-    //   },
-    //   { new: true, runValidators: true }
-    // );
-
     const allowedFields = [
-      "packageName",
-      "packageDescription",
-      "packageDestination",
-      "packageDays",
-      "packageNights",
-      "packageAccommodation",
-      "packageTransportation",
-      "packageMeals",
-      "packageActivities",
-      "packagePrice",
-      "packageDiscountPrice",
-      "packageOffer",
-      "packageImages",
+      "packageName", "packageDescription", "packageDestination",
+      "packageDays", "packageNights", "packageAccommodation",
+      "packageTransportation", "packageMeals", "packageActivities",
+      "packagePrice", "packageDiscountPrice", "packageOffer", "keyAttractions",
     ];
 
     const updateData = {};
-
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
         updateData[field] = req.body[field];
       }
     });
 
-    updateData.status = "pending";
+    //Handle new image uploads during update
+    if (req.files && req.files.length > 0) {
+      updateData.packageImages = req.files.map(file => file.filename);
+    }
+
+    updateData.status = "pending"; // Reset for re-approval
+    // Clear previous admin logs
     updateData.approvedBy = null;
     updateData.approvedAt = null;
     updateData.rejectedBy = null;
@@ -275,12 +270,6 @@ packageCtlr.packageUpdate = async (req, res) => {
       { $set: updateData },
       { new: true, runValidators: true }
     );
-    if (Object.keys(updateData).length === 6) {
-      // only approval reset fields
-      return res.status(400).json({
-        message: "At least one field must be updated",
-      });
-    }
 
     res.json({
       message: "Itinerary updated successfully and sent for re-approval",
@@ -290,6 +279,7 @@ packageCtlr.packageUpdate = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 //Remove the Itinerary
 packageCtlr.removePackage = async (req, res) => {
@@ -301,30 +291,34 @@ packageCtlr.removePackage = async (req, res) => {
     if (!package) {
       return res.status(404).json({ message: "Itinerary not found!!!" });
     }
-    //
-    if (req.role === "admin") {
-      await Package.findByIdAndDelete(packageId);
-      return res.json({ message: "Itinerary removed by admin" });
-    }
-    //check loggedin agentId is same as agentId who created the package
-    if (req.role === "agent") {
-      if (package.createdBy.toString() !== agentId) {
-        return res
-          .status(403)
-          .json({ message: "You are not allowed to delete this itinerary" });
-      }
 
-      if (package.status === "approved") {
-        return res
-          .status(403)
-          .json({ message: "Approved itineraries cannot be removed." });
-      }
+    // Role check
+    const isAdmin = req.role === "admin";
+    const isOwner = req.role === "agent" && package.createdBy.toString() === agentId;
 
-      await Package.findByIdAndDelete(packageId);
-      return res.json({ message: "Itinerary removed successfully." });
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ message: "Access Denied" });
     }
 
-    return res.status(403).json({ message: "Access Denied" });
+    if (req.role === "agent" && package.status === "approved") {
+      return res.status(403).json({ message: "Approved itineraries cannot be removed by agents." });
+    }
+
+    // Cleanup images for BOTH Admin and Agent deletion
+    if (package.packageImages && package.packageImages.length > 0) {
+      package.packageImages.forEach(filename => {
+        if (!filename.startsWith('http')) {
+          const filePath = path.join(__dirname, '../../uploads', filename);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        }
+      });
+    }
+
+    await Package.findByIdAndDelete(packageId);
+    res.json({ message: "Itinerary and images removed successfully." });
+
   } catch (err) {
     res.status(500).json({ error: "something went wrong!!!" });
   }

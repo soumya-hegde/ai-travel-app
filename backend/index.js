@@ -21,6 +21,8 @@ const bookingCtlr = require('./app/controllers/booking-controller');
 const verifyResetPass = require('./app/middlewares/verifyResetPass');
 const authorizeUser = require('./app/middlewares/authorize');
 const upload = require("./app/middlewares/upload");
+const aiCtlr = require('./app/controllers/ai-controller');
+
 require("./app/jobs/bookingCron");
 
 app.use(cors({
@@ -82,7 +84,7 @@ app.patch('/api/package/bulk-rejection', authenticateUser,  authorizeUser(['admi
 //View the Itinerires
 app.get('/api/view-package', authenticateUser, authorizeUser(['admin','agent','user']), packageCtlr.list);
 //Update the Itinerary
-app.put("/api/update-package/:packageId",authenticateUser, authorizeUser(["agent"]), packageCtlr.packageUpdate);
+app.put("/api/update-package/:packageId",authenticateUser, authorizeUser(["agent"]), upload.array('packageImages', 5), packageCtlr.packageUpdate);
 //Remove the Itinerary
 app.delete("/api/remove-package/:packageId",authenticateUser, authorizeUser(["admin", "agent"]), packageCtlr.removePackage);
 // Public list of packages (approved only)
@@ -98,6 +100,8 @@ app.get('/api/cancel-booking', authenticateUser, authorizeUser(['admin']), booki
 //send email notification for booking cancellation
 app.post(
   '/api/bookings/:id/cancel-request', authenticateUser, authorizeUser(["user"]), bookingCtlr.cancelRequest);
+//Ai smart plan code generation 
+app.post("/api/generate-smart-plan", authenticateUser, aiCtlr.generateSmartPlan);
 
 
 app.listen(port, () => {

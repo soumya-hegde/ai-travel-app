@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
-import { useSelector } from "react-redux"; // Added to sync with Auth state
-import API from "../api/axios";
+import { useSelector } from "react-redux";
+import API, { BASE_URL } from "../api/axios";
 
 export default function Home() {
   const [packages, setPackages] = useState([]);
   const navigate = useNavigate();
-
-  // LOGIC: Get token and role from Redux to stay in sync with Navbar
   const { token, role } = useSelector((state) => state.auth);
 
   const heroImages = [
@@ -17,13 +15,6 @@ export default function Home() {
   ];
 
   const [heroIndex, setHeroIndex] = useState(0);
-
-  // LOGIC: If a user is already logged in, redirect them to their dashboard automatically
-  if (token) {
-    const dashboardPath =
-      role === "agent" ? "/agent-dashboard" : "/dashboard/home";
-    return <Navigate to={dashboardPath} replace />;
-  }
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -54,19 +45,24 @@ export default function Home() {
     navigate("/login", { state: { from: target } });
   };
 
+  if (token) {
+    const dashboardPath =
+      role === "agent"
+        ? "/agent-dashboard"
+        : role === "admin"
+          ? "/admin-dashboard"
+          : "/dashboard/home";
+    return <Navigate to={dashboardPath} replace />;
+  }
+
   return (
     <div className="bg-gray-50">
-      {/* HERO - STYLING KEPT EXACTLY SAME */}
       <section
         className="h-[60vh] bg-cover bg-center flex items-center"
-        style={{
-          backgroundImage: `url(${heroImages[heroIndex]})`,
-        }}
+        style={{ backgroundImage: `url(${heroImages[heroIndex]})` }}
       >
         <div className="bg-black/50 w-full h-full flex flex-col justify-center px-10 text-white">
           <h1 className="text-4xl font-bold">Plan Smarter. Travel Better.</h1>
-
-          {/* LOGIC: Button only shows if NO token is present */}
           {!token && (
             <button
               onClick={() => navigate("/login")}
@@ -78,7 +74,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* PACKAGES - STYLING KEPT EXACTLY SAME */}
       <section className="px-10 py-14 max-w-6xl mx-auto">
         <h2 className="text-3xl font-bold mb-2 text-gray-800">
           Popular Packages
@@ -88,70 +83,77 @@ export default function Home() {
         </p>
 
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {packages.map((pkg) => (
-            <div
-              key={pkg._id}
-              className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition duration-300 overflow-hidden hover:-translate-y-2"
-            >
-              {/* IMAGE */}
-              <div className="h-48 w-full bg-white flex items-center justify-center overflow-hidden">
-                {pkg.packageImages?.[0] ? (
+          {packages.map((pkg) => {
+            // ✅ LOGIC: Check if it's an external URL or a local filename
+            const imageName =
+              Array.isArray(pkg.packageImages) && pkg.packageImages.length > 0
+                ? pkg.packageImages[0]
+                : null;
+
+            let imageURL = "https://picsum.photos/400/250?fallback";
+
+            if (imageName) {
+              if (imageName.startsWith("http")) {
+                imageURL = imageName;
+              } else {
+                imageURL = `${BASE_URL}/uploads/${imageName}`;
+              }
+            }
+
+            return (
+              <div
+                key={pkg._id}
+                className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition duration-300 overflow-hidden hover:-translate-y-2"
+              >
+                <div className="h-48 w-full bg-white flex items-center justify-center overflow-hidden">
                   <img
-                    src={pkg.packageImages[0]}
+                    src={imageURL}
                     alt={pkg.packageName}
                     className="h-full w-full object-cover transform group-hover:scale-110 transition duration-500"
                     onError={(e) => {
-                      e.currentTarget.style.display = "none";
+                      e.currentTarget.src =
+                        "https://picsum.photos/400/250?fallback";
                     }}
                   />
-                ) : null}
-              </div>
-
-              {/* CONTENT */}
-              <div className="p-5">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  {pkg.packageName}
-                </h3>
-
-                <p className="text-sm text-gray-500 mt-1">
-                  {pkg.packageDestination}
-                </p>
-
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-sm text-gray-600">
-                    {pkg.packageDays} days
-                  </span>
-                  <span className="font-semibold text-blue-700">
-                    ₹{pkg.packagePrice}
-                  </span>
                 </div>
 
-                {/* BUTTON */}
-                <button
-                  onClick={() => handleBookNow(pkg._id || pkg.id)}
-                  className="mt-5 w-full rounded-lg bg-[#0B3C5D] py-2 text-white font-medium hover:bg-black transition"
-                >
-                  Book Now
-                </button>
+                <div className="p-5">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {pkg.packageName}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {pkg.packageDestination}
+                  </p>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-sm text-gray-600">
+                      {pkg.packageDays} days
+                    </span>
+                    <span className="font-semibold text-blue-700">
+                      ₹{pkg.packagePrice}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleBookNow(pkg._id || pkg.id)}
+                    className="mt-5 w-full rounded-lg bg-[#0B3C5D] py-2 text-white font-medium hover:bg-black transition"
+                  >
+                    Book Now
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
-      {/* ABOUT - STYLING KEPT EXACTLY SAME */}
       <section id="about" className="bg-white py-16 px-10">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-gray-800">About Us</h2>
           <p className="text-gray-600 mt-4">
-            We use AI to create personalized travel plans based on your
-            interests, time, and budget — making your trips smarter and
-            hassle-free.
+            We use AI to create personalized travel plans...
           </p>
         </div>
       </section>
 
-      {/* CONTACT - STYLING KEPT EXACTLY SAME */}
       <section id="contact" className="bg-gray-100 py-16 px-10">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-gray-800">Contact Us</h2>

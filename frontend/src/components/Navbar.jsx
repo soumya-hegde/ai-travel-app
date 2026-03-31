@@ -28,7 +28,9 @@ export default function Navbar() {
   // This function now has access to 'role'
   const handleLogoClick = () => {
     if (token) {
-      if (role === "agent") navigate("/agent-dashboard/home");
+      if (role === "admin")
+        navigate("/admin-dashboard/home"); // Added admin
+      else if (role === "agent") navigate("/agent-dashboard/home");
       else navigate("/dashboard/home");
     } else {
       navigate("/");
@@ -132,10 +134,11 @@ export default function Navbar() {
                   <button
                     onClick={() => {
                       setOpen(false);
-                      const profilePath =
-                        role === "agent"
-                          ? "/agent-dashboard/profile"
-                          : "/dashboard/profile";
+                      let profilePath = "/dashboard/profile";
+                      if (role === "admin")
+                        profilePath = "/admin-dashboard/profile";
+                      else if (role === "agent")
+                        profilePath = "/agent-dashboard/profile";
                       navigate(profilePath);
                     }}
                     className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition"

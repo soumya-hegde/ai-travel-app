@@ -86,6 +86,10 @@ const packageSchema = new Schema(
 
     rejectionReason: {
       type: String
+    },
+    keyAttractions: {
+      type: [String], // Array of strings: ["Baga Beach", "Fort Aguada", "Dudhsagar Falls"]
+      required: true
     }
   },
   { timestamps: true }

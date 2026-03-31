@@ -18,6 +18,11 @@ import AgentProfile from "./pages/agent/AgentProfile";
 import AgentLayout from "./pages/agent/AgentLayout";
 import CreatePackage from "./pages/agent/CreatePackage";
 import MyPackages from "./pages/agent/MyPackages";
+import AgentOverview from "./pages/agent/AgentOverview";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminPackages from "./pages/admin/AdminPackages";
+import AdminBookings from "./pages/admin/AdminBookings";
+import AdminDashboardHome from "./pages/admin/AdminDashboardHome";
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -28,6 +33,7 @@ function App() {
 
       <Routes>
         <Route path="/" element={<Home />} />
+
         <Route
           path="/login"
           element={!token ? <Login /> : <Navigate to="/dashboard/home" />}
@@ -37,12 +43,12 @@ function App() {
           element={!token ? <Register /> : <Navigate to="/dashboard/home" />}
         />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        {/* --- USER DASHBOARD --- */}
         <Route
           path="/dashboard"
           element={
             <RequireAuth permittedRoles={["user"]}>
-              {" "}
-              {/* Only 'user' can enter here */}
               <DashboardLayout />
             </RequireAuth>
           }
@@ -53,6 +59,8 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="package/:id" element={<PackageDetails />} />
         </Route>
+
+        {/* --- AGENT DASHBOARD --- */}
         <Route
           path="/agent-dashboard"
           element={
@@ -62,10 +70,26 @@ function App() {
           }
         >
           <Route index element={<Navigate to="home" replace />} />
-          <Route path="home" element={<DashboardHome />} />
+          <Route path="home" element={<AgentOverview />} />
           <Route path="create-package" element={<CreatePackage />} />
           <Route path="my-packages" element={<MyPackages />} />
           <Route path="profile" element={<AgentProfile />} />
+        </Route>
+
+        {/* --- ADMIN DASHBOARD --- */}
+        <Route
+          path="/admin-dashboard"
+          element={
+            <RequireAuth permittedRoles={["admin"]}>
+              <AdminLayout />
+            </RequireAuth>
+          }
+        >
+          <Route index element={<Navigate to="packages" replace />} />
+          <Route path="packages" element={<AdminPackages />} />
+          <Route path="home" element={<AdminDashboardHome />} />
+          <Route path="bookings" element={<AdminBookings />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
       </Routes>
     </div>

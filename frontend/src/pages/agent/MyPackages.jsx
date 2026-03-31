@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSelector } from "react-redux";
 import API from "../../api/axios";
 
 export default function MyPackages() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const userId = useSelector((state) => state.auth.user?._id);
 
   useEffect(() => {
     const fetchMyPackages = async () => {
       try {
-        const res = await API.get("/view-package"); // Backend returns all for agent; UI filters or shows all
-        setPackages(res.data);
+        const res = await API.get("/view-package"); // Backend returns all for agent
+        setPackages(res.data || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -25,12 +27,20 @@ export default function MyPackages() {
     return "bg-yellow-100 text-yellow-700";
   };
 
+  const myPackages = useMemo(() => {
+    if (!userId) return packages;
+    return packages.filter((pkg) => {
+      const creator = pkg.createdBy?._id || pkg.createdBy;
+      return String(creator) === String(userId);
+    });
+  }, [packages, userId]);
+
   if (loading)
     return <div className="text-center p-10">Loading your itineraries...</div>;
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      {packages.map((pkg) => (
+      {myPackages.map((pkg) => (
         <div key={pkg._id} className="bg-white border rounded-xl p-5 shadow-sm">
           <div className="flex justify-between items-start">
             <h3 className="text-lg font-bold">{pkg.packageName}</h3>
@@ -51,7 +61,7 @@ export default function MyPackages() {
           </div>
         </div>
       ))}
-      {packages.length === 0 && (
+      {myPackages.length === 0 && (
         <p className="text-gray-500 col-span-2 text-center">
           No itineraries created yet.
         </p>

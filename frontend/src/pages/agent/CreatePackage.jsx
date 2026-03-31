@@ -15,9 +15,10 @@ export default function CreatePackage() {
     packagePrice: "",
     packageDiscountPrice: "",
     packageOffer: false,
+    keyAttractions: "", // Comma separated string
   });
 
-  const [images, setImages] = useState([]); // Store selected files
+  const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState([]);
@@ -44,15 +45,24 @@ export default function CreatePackage() {
       return;
     }
 
-    // Since we are uploading files, we MUST use FormData
     const formData = new FormData();
 
-    // Append text fields
+    // 1. Append all fields except keyAttractions from the loop
     Object.keys(form).forEach((key) => {
-      formData.append(key, form[key]);
+      if (key !== "keyAttractions") {
+        formData.append(key, form[key]);
+      }
     });
 
-    // Append images
+    // 2. Format Attractions correctly as a JSON string
+    const attractionsArray = form.keyAttractions
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item !== ""); // Remove empty strings
+
+    formData.append("keyAttractions", JSON.stringify(attractionsArray));
+
+    // 3. Append images
     images.forEach((file) => {
       formData.append("packageImages", file);
     });
@@ -61,7 +71,9 @@ export default function CreatePackage() {
       await API.post("/create-package", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+
       setMessage("Itinerary created successfully and sent for approval!");
+
       // Reset form
       setForm({
         packageName: "",
@@ -76,6 +88,7 @@ export default function CreatePackage() {
         packagePrice: "",
         packageDiscountPrice: "",
         packageOffer: false,
+        keyAttractions: "",
       });
       setImages([]);
     } catch (err) {
@@ -89,14 +102,13 @@ export default function CreatePackage() {
   return (
     <div className="max-w-3xl mx-auto bg-white p-8 rounded-2xl border shadow-sm">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">
-        Create New Itinerary
+        Create Smart Itinerary
       </h2>
 
       <form
         onSubmit={handleSubmit}
         className="grid grid-cols-1 md:grid-cols-2 gap-5"
       >
-        {/* Basic Info */}
         <div className="col-span-2">
           <label className="text-sm font-semibold text-gray-600">
             Package Name
@@ -152,7 +164,6 @@ export default function CreatePackage() {
           />
         </div>
 
-        {/* The Missing Required Fields */}
         <div>
           <label className="text-sm font-semibold text-gray-600">
             Transportation
@@ -194,7 +205,6 @@ export default function CreatePackage() {
           />
         </div>
 
-        {/* Numbers */}
         <div>
           <label className="text-sm font-semibold text-gray-600">Days</label>
           <input
@@ -247,7 +257,6 @@ export default function CreatePackage() {
           />
         </div>
 
-        {/* IMAGE UPLOAD */}
         <div className="col-span-2">
           <label className="text-sm font-semibold text-gray-600">
             Upload Images (1-5 images)
@@ -259,9 +268,21 @@ export default function CreatePackage() {
             className="w-full border p-2 rounded-lg mt-1"
             onChange={handleFileChange}
           />
-          <p className="text-xs text-gray-400 mt-1 italic">
-            Selected {images.length} images
-          </p>
+        </div>
+
+        <div className="col-span-2">
+          <label className="text-sm font-semibold text-gray-600">
+            Key Attractions (comma separated)
+          </label>
+          <input
+            className="w-full border p-2.5 rounded-lg mt-1"
+            placeholder="e.g. Mysore Palace, Chamundi Hills, Zoo"
+            value={form.keyAttractions}
+            onChange={(e) =>
+              setForm({ ...form, keyAttractions: e.target.value })
+            }
+            required
+          />
         </div>
 
         <div className="col-span-2 flex items-center gap-2">

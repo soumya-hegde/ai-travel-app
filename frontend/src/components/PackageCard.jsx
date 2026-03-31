@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import usePackages from "../context/usePackages";
+import { BASE_URL } from "../api/axios";
 
 export default function PackageCard({ id }) {
   const { getPackageById } = usePackages();
@@ -7,10 +8,21 @@ export default function PackageCard({ id }) {
 
   if (!pkg) return null;
 
-  const image =
+  //LOGIC: Check if it's an external URL or a local filename
+  const imageName =
     Array.isArray(pkg.packageImages) && pkg.packageImages.length > 0
       ? pkg.packageImages[0]
-      : "https://picsum.photos/400/250?fallback";
+      : null;
+
+  let imageURL = "https://picsum.photos/400/250?fallback";
+
+  if (imageName) {
+    if (imageName.startsWith("http")) {
+      imageURL = imageName; // Use external URL as is
+    } else {
+      imageURL = `${BASE_URL}/uploads/${imageName}`; // Add local server prefix
+    }
+  }
 
   return (
     <Link
@@ -19,7 +31,7 @@ export default function PackageCard({ id }) {
     >
       <div className="relative h-44 w-full overflow-hidden">
         <img
-          src={image}
+          src={imageURL}
           alt={pkg.packageName}
           className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
           onError={(e) => {
@@ -49,6 +61,21 @@ export default function PackageCard({ id }) {
           <span className="inline-flex w-full items-center justify-center rounded-lg bg-[#0B3C5D] py-2 text-sm font-semibold text-white transition group-hover:bg-black">
             View Details
           </span>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1">
+          {pkg.keyAttractions?.slice(0, 3).map((place, index) => (
+            <span
+              key={index}
+              className="bg-blue-50 text-blue-600 text-[10px] px-2 py-0.5 rounded-full border border-blue-100"
+            >
+              {place}
+            </span>
+          ))}
+          {pkg.keyAttractions?.length > 3 && (
+            <span className="text-[10px] text-gray-400">
+              +{pkg.keyAttractions.length - 3} more
+            </span>
+          )}
         </div>
       </div>
     </Link>
