@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../../api/axios";
 import PackageCard from "../../components/PackageCard";
+import usePackages from "../../context/usePackages";
 import {
   LayoutGrid,
   List,
@@ -12,6 +13,7 @@ import {
 
 export default function AdminPackages() {
   const [packages, setPackages] = useState([]);
+  const { setPackages: setGlobalPackages } = usePackages();
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
   const [viewMode, setViewMode] = useState("table"); // "table" or "cards"
@@ -19,9 +21,10 @@ export default function AdminPackages() {
   const fetchPackages = async () => {
     try {
       setLoading(true);
-      // Backend now populates createdBy.username thanks to your update
       const res = await API.get("/view-package");
-      setPackages(res.data || []);
+      const data = res.data || [];
+      setPackages(data);
+      setGlobalPackages(data); // ✅ This makes PackageCard work
     } catch (err) {
       console.error("Error fetching packages", err);
     } finally {
@@ -33,7 +36,6 @@ export default function AdminPackages() {
     fetchPackages();
   }, []);
 
-  // --- Action Handlers ---
   const handleApprove = async (id) => {
     if (!window.confirm("Approve this itinerary?")) return;
     try {
@@ -149,7 +151,7 @@ export default function AdminPackages() {
                     <td className="p-4 text-center">
                       <input
                         type="checkbox"
-                        disabled={pkg.status !== "pending"} // Disabled if not pending
+                        disabled={pkg.status !== "pending"}
                         checked={selectedIds.includes(pkg._id)}
                         onChange={() => toggleSelect(pkg._id)}
                         className={`h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 ${pkg.status !== "pending" ? "cursor-not-allowed opacity-30" : "cursor-pointer"}`}
@@ -226,11 +228,9 @@ export default function AdminPackages() {
           )}
         </div>
       ) : (
-        /* CARD VIEW: Similar to Home Page */
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {packages.map((pkg) => (
             <div key={pkg._id} className="relative group">
-              {/* Show status badge overlay on top of card */}
               <div
                 className={`absolute top-3 right-3 z-10 px-2 py-1 rounded-md text-[10px] font-black uppercase shadow-lg border
                   ${
@@ -243,7 +243,7 @@ export default function AdminPackages() {
               >
                 {pkg.status}
               </div>
-              <PackageCard id={pkg._id} />
+              <PackageCard id={pkg._id} showCta={false} clickable={false} />
             </div>
           ))}
         </div>

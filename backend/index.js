@@ -22,6 +22,7 @@ const verifyResetPass = require('./app/middlewares/verifyResetPass');
 const authorizeUser = require('./app/middlewares/authorize');
 const upload = require("./app/middlewares/upload");
 const aiCtlr = require('./app/controllers/ai-controller');
+const reviewCtlr = require('./app/controllers/review-controller');
 
 require("./app/jobs/bookingCron");
 
@@ -102,6 +103,11 @@ app.post(
   '/api/bookings/:id/cancel-request', authenticateUser, authorizeUser(["user"]), bookingCtlr.cancelRequest);
 //Ai smart plan code generation 
 app.post("/api/generate-smart-plan", authenticateUser, aiCtlr.generateSmartPlan);
+
+//rate and review creation
+app.post('/api/reviews', authenticateUser, authorizeUser(['user']), reviewCtlr.create);
+//rate and review listing for a package
+app.get('/api/packages/:packageId/reviews', reviewCtlr.listByPackage);
 
 
 app.listen(port, () => {

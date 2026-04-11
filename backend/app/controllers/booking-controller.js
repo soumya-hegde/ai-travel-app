@@ -58,7 +58,7 @@ bookingCtlr.createBooking = async (req, res) => {
       agentId: package.createdBy,
       packageId,
       travelDate,
-      totalAmount: package.packageDiscountPrice || package.packagePrice,
+      totalAmount: package.packagePrice,
     });
 
     await booking.save();
@@ -96,7 +96,7 @@ bookingCtlr.viewBooking = async (req, res) => {
     const bookings = await Booking.find(filter)
       .populate("userId", "username email")
       .populate("agentId", "username email")
-      .populate("packageId", "packageName packageDestination")
+      .populate("packageId", "packageName packageDestination packagePrice")
       .sort({ createdAt: -1 });
 
     res.json({

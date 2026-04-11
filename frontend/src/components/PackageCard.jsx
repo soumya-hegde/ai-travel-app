@@ -1,32 +1,39 @@
 import { Link } from "react-router-dom";
 import usePackages from "../context/usePackages";
 import { BASE_URL } from "../api/axios";
+import { Star } from "lucide-react";
 
-export default function PackageCard({ id }) {
+export default function PackageCard({
+  id,
+  to = `/dashboard/package/${id}`,
+  showCta = true,
+  clickable = true,
+}) {
   const { getPackageById } = usePackages();
   const pkg = getPackageById(id);
 
   if (!pkg) return null;
 
-  //LOGIC: Check if it's an external URL or a local filename
   const imageName =
     Array.isArray(pkg.packageImages) && pkg.packageImages.length > 0
       ? pkg.packageImages[0]
       : null;
 
   let imageURL = "https://picsum.photos/400/250?fallback";
-
   if (imageName) {
     if (imageName.startsWith("http")) {
-      imageURL = imageName; // Use external URL as is
+      imageURL = imageName;
     } else {
-      imageURL = `${BASE_URL}/uploads/${imageName}`; // Add local server prefix
+      imageURL = `${BASE_URL}/uploads/${imageName}`;
     }
   }
 
+  const Wrapper = clickable ? Link : "div";
+  const wrapperProps = clickable ? { to } : {};
+
   return (
-    <Link
-      to={`/dashboard/package/${id}`}
+    <Wrapper
+      {...wrapperProps}
       className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
     >
       <div className="relative h-44 w-full overflow-hidden">
@@ -45,6 +52,16 @@ export default function PackageCard({ id }) {
         <h3 className="text-lg font-semibold text-slate-900 group-hover:text-blue-700 transition">
           {pkg.packageName}
         </h3>
+
+        <div className="flex items-center gap-1 mt-1">
+          <Star size={14} fill="#f59e0b" color="#f59e0b" />
+          <span className="text-xs font-bold text-gray-700">
+            {pkg.packageRating || "0.0"}
+          </span>
+          <span className="text-[10px] text-gray-400">
+            ({pkg.packageTotalRatings || 0})
+          </span>
+        </div>
         <p className="mt-1 text-sm text-slate-500">{pkg.packageDays} days</p>
 
         <div className="mt-3 flex items-center justify-between">
@@ -52,16 +69,18 @@ export default function PackageCard({ id }) {
             {pkg.packageDestination}
           </span>
           <span className="text-base font-semibold text-blue-700">
-            {"\u20B9"}
-            {pkg.packagePrice}
+            ₹{pkg.packagePrice}
           </span>
         </div>
 
-        <div className="mt-4">
-          <span className="inline-flex w-full items-center justify-center rounded-lg bg-[#0B3C5D] py-2 text-sm font-semibold text-white transition group-hover:bg-black">
-            View Details
-          </span>
-        </div>
+        {showCta && (
+          <div className="mt-4">
+            <span className="inline-flex w-full items-center justify-center rounded-lg bg-[#0B3C5D] py-2 text-sm font-semibold text-white transition group-hover:bg-black">
+              View Details
+            </span>
+          </div>
+        )}
+
         <div className="mt-2 flex flex-wrap gap-1">
           {pkg.keyAttractions?.slice(0, 3).map((place, index) => (
             <span
@@ -78,6 +97,6 @@ export default function PackageCard({ id }) {
           )}
         </div>
       </div>
-    </Link>
+    </Wrapper>
   );
 }

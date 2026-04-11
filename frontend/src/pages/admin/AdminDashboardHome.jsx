@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../../api/axios";
 import PackageCard from "../../components/PackageCard";
-import usePackages from "../../context/usePackages"; // 1. Import the hook
+import usePackages from "../../context/usePackages";
 import {
   PieChart,
   Pie,
@@ -12,7 +12,6 @@ import {
 } from "recharts";
 
 export default function AdminDashboardHome() {
-  // 2. Get setPackages from Context
   const { setPackages: setGlobalPackages } = usePackages();
   const [localPackages, setLocalPackages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,9 +21,8 @@ export default function AdminDashboardHome() {
       try {
         const res = await API.get("/view-package");
         const data = res.data || [];
-
-        setLocalPackages(data); // Set local state for the groups/charts
-        setGlobalPackages(data); // 3. Update the Global Context so PackageCard can find the data
+        setLocalPackages(data);
+        setGlobalPackages(data);
       } catch (err) {
         console.error("Fetch error:", err);
       } finally {
@@ -34,7 +32,6 @@ export default function AdminDashboardHome() {
     fetchAll();
   }, [setGlobalPackages]);
 
-  // Filter groups from local state
   const approved = localPackages.filter((p) => p.status === "approved");
   const pending = localPackages.filter((p) => p.status === "pending");
   const rejected = localPackages.filter((p) => p.status === "rejected");
@@ -93,7 +90,11 @@ export default function AdminDashboardHome() {
         </div>
         <div className={gridClass}>
           {approved.map((pkg) => (
-            <PackageCard key={pkg._id} id={pkg._id} />
+            <PackageCard
+              key={pkg._id}
+              id={pkg._id}
+              to={`/admin-dashboard/package/${pkg._id}`}
+            />
           ))}
           {approved.length === 0 && (
             <p className="text-gray-400 col-span-full">
@@ -115,7 +116,11 @@ export default function AdminDashboardHome() {
         </div>
         <div className={gridClass}>
           {pending.map((pkg) => (
-            <PackageCard key={pkg._id} id={pkg._id} />
+            <PackageCard
+              key={pkg._id}
+              id={pkg._id}
+              to={`/admin-dashboard/package/${pkg._id}`}
+            />
           ))}
           {pending.length === 0 && (
             <p className="text-gray-400 col-span-full">No pending requests.</p>
@@ -135,7 +140,11 @@ export default function AdminDashboardHome() {
         </div>
         <div className={gridClass}>
           {rejected.map((pkg) => (
-            <PackageCard key={pkg._id} id={pkg._id} />
+            <PackageCard
+              key={pkg._id}
+              id={pkg._id}
+              to={`/admin-dashboard/package/${pkg._id}`}
+            />
           ))}
           {rejected.length === 0 && (
             <p className="text-gray-400 col-span-full">No rejected packages.</p>

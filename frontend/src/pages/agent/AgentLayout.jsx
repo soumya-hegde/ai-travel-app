@@ -4,6 +4,7 @@ import {
   PlusCircle,
   FolderHeart,
   UserCog,
+  Users,
 } from "lucide-react";
 
 export default function AgentLayout() {
@@ -22,6 +23,11 @@ export default function AgentLayout() {
       path: "/agent-dashboard/my-packages",
       icon: FolderHeart,
     },
+    {
+      name: "Customer Bookings",
+      path: "/agent-dashboard/bookings",
+      icon: Users,
+    }, // Add this
     { name: "Profile", path: "/agent-dashboard/profile", icon: UserCog },
   ];
 
