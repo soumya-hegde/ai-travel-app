@@ -26,9 +26,16 @@ const reviewCtlr = require('./app/controllers/review-controller');
 
 require("./app/jobs/bookingCron");
 
+// app.use(cors({
+//   origin: "http://localhost:5173",
+//   credentials: true,
+// }));
 app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true,
+  origin: [
+    "http://localhost:5173",
+    "https://ai-travel-app-frontend.onrender.com"
+  ],
+  credentials: true
 }));
 
 
