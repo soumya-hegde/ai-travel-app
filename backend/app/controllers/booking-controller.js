@@ -4,6 +4,13 @@ const sendMail = require("../utils/mailer");
 const { bookingValidationSchema } = require("../validators/validation");
 const bcryptjs = require("bcryptjs");
 const bookingCtlr = {};
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 bookingCtlr.createBooking = async (req, res) => {
   try {
@@ -193,5 +200,75 @@ ${reason}`;
 };
 
 
+
+// 1. Create Order
+bookingCtlr.createOrder = async (req, res) => {
+  try {
+    const { amount } = req.body; 
+
+    // Validation: ensure amount exists and is a number
+    if (!amount || isNaN(amount)) {
+      return res.status(400).json({ error: "Valid amount is required" });
+    }
+
+    const options = {
+      amount: Math.round(amount * 100), // Convert INR to Paise (integer)
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`,
+    };
+
+    const order = await razorpay.orders.create(options);
+    res.json(order);
+  } catch (err) {
+    console.error("RAZORPAY ERROR:", err); // This shows the real error in your terminal
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// 2. Verify Payment and Create Booking
+bookingCtlr.verifyAndBook = async (req, res) => {
+  try {
+    const { 
+        razorpay_order_id, 
+        razorpay_payment_id, 
+        razorpay_signature,
+        packageId,
+        travelDate,
+        totalAmount
+    } = req.body;
+
+    // Verify Signature
+    const sign = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSign = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(sign.toString())
+      .digest("hex");
+
+    if (razorpay_signature !== expectedSign) {
+      return res.status(400).json({ error: "Invalid payment signature" });
+    }
+
+    // If verified, save booking to DB
+    const packageData = await Package.findById(packageId);
+    
+    const booking = new Booking({
+      userId: req.userId,
+      agentId: packageData.createdBy,
+      packageId,
+      travelDate,
+      totalAmount,
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+      paymentStatus: 'paid',
+      status: 'confirmed'
+    });
+
+    await booking.save();
+    res.status(201).json({ message: "Payment successful and booking confirmed", booking });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 module.exports = bookingCtlr;

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-//export const BASE_URL = "http://localhost:1111"; 
+// export const BASE_URL = "http://localhost:1111"; 
 export const BASE_URL = "https://ai-travel-app-backend-l7ji.onrender.com";
 
 const API = axios.create({

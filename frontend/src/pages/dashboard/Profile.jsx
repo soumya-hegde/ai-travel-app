@@ -44,11 +44,10 @@ export default function Profile() {
       setMessage("");
       await API.put(`/users/${form._id}`, {
         username: form.username,
-        email: form.email,
       });
 
       // Update Redux state immediately
-      dispatch(updateUserInfo({ username: form.username, email: form.email }));
+      dispatch(updateUserInfo({ username: form.username }));
 
       setMessage("Profile updated successfully.");
     } catch (err) {
@@ -108,10 +107,8 @@ export default function Profile() {
             <input
               type="email"
               value={form.email}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, email: e.target.value }))
-              }
-              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+              readOnly
+              className="mt-2 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 focus:outline-none"
             />
           </div>
 

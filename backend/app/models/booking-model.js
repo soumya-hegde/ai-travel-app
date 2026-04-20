@@ -40,7 +40,14 @@ const bookingSchema = new Schema(
       type: Date,
       default: null,
     },
-  },
+    razorpayOrderId: String,
+    razorpayPaymentId: String,
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'paid', 'failed'],
+      default: 'pending'
+    }
+    },
   { timestamps: true }
 );
 

@@ -116,6 +116,9 @@ app.post('/api/reviews', authenticateUser, authorizeUser(['user']), reviewCtlr.c
 //rate and review listing for a package
 app.get('/api/packages/:packageId/reviews', reviewCtlr.listByPackage);
 
+//payment integration with Razorpay
+app.post('/api/bookings/create-order', authenticateUser, bookingCtlr.createOrder);
+app.post('/api/bookings/verify', authenticateUser, bookingCtlr.verifyAndBook);
 
 app.listen(port, () => {
     console.log(`Server is running on the port ${port}`);
