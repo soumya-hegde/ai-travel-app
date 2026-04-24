@@ -13,7 +13,7 @@ export default function Login() {
   const [showPass, setShowPass] = useState(false);
 
   const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useState([]);
 
   const validate = () => {
     const err = {};
@@ -26,6 +26,7 @@ export default function Login() {
     e.preventDefault();
     const err = validate();
     setErrors(err);
+    setServerError([]);
     if (Object.keys(err).length > 0) return;
 
     dispatch(loginUser(form))
@@ -39,7 +40,15 @@ export default function Login() {
         else navigate("/dashboard");
       })
       .catch((err) => {
-        setServerError(err?.error || "Login failed");
+        const apiError = err?.error;
+
+        if (Array.isArray(apiError)) {
+          setServerError(apiError);
+        } else if (typeof apiError === "string") {
+          setServerError([apiError]);
+        } else {
+          setServerError(["Login failed"]);
+        }
       });
   };
 
@@ -65,7 +74,9 @@ export default function Login() {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
             {errors.email && (
-              <p className="text-red-300 text-sm mt-1">{errors.email}</p>
+              <p className="mt-2 rounded-md border border-red-200 bg-red-50/95 px-3 py-2 text-sm font-medium text-red-700 shadow-sm">
+                {errors.email}
+              </p>
             )}
           </div>
 
@@ -84,7 +95,9 @@ export default function Login() {
               {showPass ? "Hide" : "Show"}
             </button>
             {errors.password && (
-              <p className="text-red-300 text-sm mt-1">{errors.password}</p>
+              <p className="mt-2 rounded-md border border-red-200 bg-red-50/95 px-3 py-2 text-sm font-medium text-red-700 shadow-sm">
+                {errors.password}
+              </p>
             )}
           </div>
 
@@ -98,8 +111,16 @@ export default function Login() {
             </button>
           </div>
 
-          {serverError && (
-            <p className="text-red-300 text-center text-sm">{serverError}</p>
+          {serverError.length > 0 && (
+            <div className="rounded-lg border border-red-200 bg-red-50/95 px-4 py-3 text-sm text-red-700 shadow-sm">
+              <ul className="list-disc pl-5 space-y-1">
+                {serverError.map((msg, index) => (
+                  <li key={index} className="font-medium">
+                    {msg}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           <button className="w-full bg-blue-950 text-white py-2 rounded-lg font-semibold hover:bg-black">

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import API from "../../api/axios";
 import { updateUserInfo } from "../../slices/authSlice";
 
 export default function AgentProfile() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     username: "",
@@ -18,6 +20,7 @@ export default function AgentProfile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [fetchError, setFetchError] = useState("");
 
   const [passForm, setPassForm] = useState({
     oldPassword: "",
@@ -28,26 +31,37 @@ export default function AgentProfile() {
   const [passSaving, setPassSaving] = useState(false);
   const [passMessage, setPassMessage] = useState("");
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setLoading(true);
-        const res = await API.get("/users/account");
-        setForm({
-          username: res.data.username || "",
-          email: res.data.email || "",
-          agencyName: res.data.agencyName || "",
-          phone: res.data.phone || "",
-          address: res.data.address || "",
-          _id: res.data._id || "",
-        });
-      } catch (err) {
-        setMessage(err.response?.data?.error || "Failed to load profile");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      setFetchError("");
+      setMessage("");
 
+      const res = await API.get("/users/account");
+      setForm({
+        username: res.data.username || "",
+        email: res.data.email || "",
+        agencyName: res.data.agencyName || "",
+        phone: res.data.phone || "",
+        address: res.data.address || "",
+        _id: res.data._id || "",
+      });
+    } catch (err) {
+      if (err.response?.status === 401) {
+        setFetchError("Your session has expired. Please log in again.");
+      } else {
+        setFetchError(
+          err.response?.data?.error ||
+            err.response?.data?.message ||
+            "Failed to load profile.",
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProfile();
   }, []);
 
@@ -58,7 +72,6 @@ export default function AgentProfile() {
 
       await API.put(`/agents/${form._id}`, {
         username: form.username,
-        email: form.email,
         agencyName: form.agencyName,
         phone: form.phone,
         address: form.address,
@@ -67,23 +80,39 @@ export default function AgentProfile() {
       dispatch(
         updateUserInfo({
           username: form.username,
-          email: form.email,
         }),
       );
 
       setMessage("Profile updated successfully!");
     } catch (err) {
-      setMessage(
-        err.response?.data?.message ||
-          err.response?.data?.error ||
-          "Error updating profile",
-      );
+      const apiError = err.response?.data?.error;
+      const apiMessage = err.response?.data?.message;
+
+      if (Array.isArray(apiError)) {
+        setMessage(apiError.join(", "));
+      } else {
+        setMessage(apiMessage || apiError || "Error updating profile");
+      }
     } finally {
       setSaving(false);
     }
   };
 
   const handlePasswordUpdate = async () => {
+    const passwordRule = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+
+    if (!passForm.oldPassword || !passForm.newPassword) {
+      setPassMessage("Please fill in both password fields.");
+      return;
+    }
+
+    if (!passwordRule.test(passForm.newPassword)) {
+      setPassMessage(
+        "New password must be at least 8 characters and include uppercase, lowercase, number, and special character.",
+      );
+      return;
+    }
+
     try {
       setPassSaving(true);
       setPassMessage("");
@@ -96,11 +125,14 @@ export default function AgentProfile() {
         newPassword: "",
       });
     } catch (err) {
-      setPassMessage(
-        err.response?.data?.message ||
-          err.response?.data?.error ||
-          "Failed to update password",
-      );
+      const apiError = err.response?.data?.error;
+      const apiMessage = err.response?.data?.message;
+
+      if (Array.isArray(apiError)) {
+        setPassMessage(apiError.join(", "));
+      } else {
+        setPassMessage(apiMessage || apiError || "Failed to update password");
+      }
     } finally {
       setPassSaving(false);
     }
@@ -109,6 +141,37 @@ export default function AgentProfile() {
   if (loading) {
     return (
       <div className="p-6 text-center text-gray-500">Loading profile...</div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="p-6">
+        <div className="mx-auto max-w-2xl rounded-2xl border bg-white p-6 shadow">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Unable to load profile
+          </h2>
+          <p className="mt-2 text-sm text-red-600">{fetchError}</p>
+
+          <div className="mt-5 flex gap-3">
+            <button
+              onClick={fetchProfile}
+              className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
+            >
+              Retry
+            </button>
+
+            {fetchError.toLowerCase().includes("session") && (
+              <button
+                onClick={() => navigate("/login")}
+                className="rounded-lg border border-gray-300 px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Go to Login
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -140,17 +203,25 @@ export default function AgentProfile() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="agent-email"
+              className="block text-sm font-medium text-gray-700"
+            >
               Email
             </label>
             <input
+              id="agent-email"
               type="email"
               value={form.email}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, email: e.target.value }))
-              }
-              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+              readOnly
+              aria-readonly="true"
+              aria-describedby="agent-email-help"
+              className="mt-2 w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-gray-500 cursor-not-allowed focus:outline-none"
             />
+            <p id="agent-email-help" className="mt-1 text-xs text-gray-500">
+              This email is your account identity and cannot be changed from the
+              agent profile.
+            </p>
           </div>
 
           <div>
@@ -197,13 +268,13 @@ export default function AgentProfile() {
           <button
             onClick={handleUpdate}
             disabled={saving}
-            className="w-full rounded-lg bg-blue-600 py-3 text-white font-semibold hover:bg-blue-700 disabled:bg-gray-300"
+            className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-gray-300"
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>
 
           {message && (
-            <div className="rounded-md bg-blue-50 px-3 py-2 text-blue-700 text-sm">
+            <div className="rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-700">
               {message}
             </div>
           )}
@@ -258,18 +329,23 @@ export default function AgentProfile() {
                 </button>
               </div>
 
+              <p className="text-xs text-gray-500">
+                Password must be at least 8 characters and include uppercase,
+                lowercase, number, and special character.
+              </p>
+
               <button
                 onClick={handlePasswordUpdate}
                 disabled={
                   passSaving || !passForm.oldPassword || !passForm.newPassword
                 }
-                className="w-full rounded-lg bg-slate-900 py-2 text-white font-semibold hover:bg-black disabled:bg-gray-300"
+                className="w-full rounded-lg bg-slate-900 py-2 font-semibold text-white hover:bg-black disabled:bg-gray-300"
               >
                 {passSaving ? "Updating..." : "Update Password"}
               </button>
 
               {passMessage && (
-                <div className="rounded-md bg-green-50 px-3 py-2 text-green-700 text-sm">
+                <div className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
                   {passMessage}
                 </div>
               )}

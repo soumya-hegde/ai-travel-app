@@ -104,7 +104,8 @@ app.post('/api/create-booking', authenticateUser, authorizeUser(['user']), booki
 //view booking
 app.get('/api/view-booking', authenticateUser, authorizeUser(['user','agent','admin']), bookingCtlr.viewBooking);
 //cancel booking
-app.get('/api/cancel-booking', authenticateUser, authorizeUser(['admin']), bookingCtlr.cancelBooking);
+app.patch("/api/cancel-booking/:bookingId", authenticateUser, authorizeUser(["admin"]), bookingCtlr.cancelBooking);
+
 //send email notification for booking cancellation
 app.post(
   '/api/bookings/:id/cancel-request', authenticateUser, authorizeUser(["user"]), bookingCtlr.cancelRequest);

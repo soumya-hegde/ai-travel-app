@@ -117,17 +117,18 @@ bookingCtlr.viewBooking = async (req, res) => {
 
 bookingCtlr.cancelBooking = async (req, res) => {
   try {
-    const bookingId = req.params.bookingId;
-    const booking = await Booking.findById(bookingId);
-
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
+    const { bookingId } = req.params;
 
     if (req.role !== "admin") {
       return res.status(403).json({
         message: "Only admin can cancel bookings",
       });
+    }
+
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
     }
 
     if (booking.status === "completed") {
@@ -145,14 +146,19 @@ bookingCtlr.cancelBooking = async (req, res) => {
     booking.status = "cancelled";
     booking.cancelledBy = "admin";
     booking.cancelledAt = new Date();
+    booking.paymentStatus = booking.paymentStatus || "paid";
 
     await booking.save();
 
-    res.json({ message: "Booking cancelled successfully" });
+    return res.json({
+      message: "Booking cancelled successfully",
+      booking,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
+
 
 
 bookingCtlr.cancelRequest = async (req, res) => {

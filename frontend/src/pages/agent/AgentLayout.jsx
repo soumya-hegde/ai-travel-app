@@ -1,11 +1,5 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard,
-  PlusCircle,
-  FolderHeart,
-  UserCog,
-  Users,
-} from "lucide-react";
+import { LayoutDashboard, PlusCircle, FolderHeart, Users } from "lucide-react";
 
 export default function AgentLayout() {
   const navigate = useNavigate();
@@ -27,8 +21,7 @@ export default function AgentLayout() {
       name: "Customer Bookings",
       path: "/agent-dashboard/bookings",
       icon: Users,
-    }, // Add this
-    { name: "Profile", path: "/agent-dashboard/profile", icon: UserCog },
+    },
   ];
 
   return (

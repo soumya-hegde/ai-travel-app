@@ -25,6 +25,7 @@ import AdminBookings from "./pages/admin/AdminBookings";
 import AdminDashboardHome from "./pages/admin/AdminDashboardHome";
 import AdminPackageDetails from "./pages/admin/AdminPackageDetails";
 import AgentBookings from "./pages/agent/AgentBookings";
+import AgentEditPackage from "./pages/agent/AgentEditPackage";
 
 function App() {
   const token = useSelector((state) => state.auth.token);
@@ -75,6 +76,7 @@ function App() {
           <Route path="home" element={<AgentOverview />} />
           <Route path="create-package" element={<CreatePackage />} />
           <Route path="my-packages" element={<MyPackages />} />
+          <Route path="edit-package/:id" element={<AgentEditPackage />} />
           <Route path="bookings" element={<AgentBookings />} />
           <Route path="profile" element={<AgentProfile />} />
         </Route>

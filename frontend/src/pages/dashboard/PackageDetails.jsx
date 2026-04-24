@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import API, { BASE_URL } from "../../api/axios";
+import { useAppModal } from "../../hooks/useAppModal";
 
 export default function PackageDetails() {
   const { id } = useParams();
@@ -18,6 +19,7 @@ export default function PackageDetails() {
 
   const [aiPlan, setAiPlan] = useState(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const { showAlert } = useAppModal();
 
   useEffect(() => {
     let isMounted = true;
@@ -158,7 +160,11 @@ export default function PackageDetails() {
 
   const handleGenerateAI = async () => {
     if (!travelDate) {
-      alert("Please select a travel date first!");
+      await showAlert({
+        variant: "warning",
+        title: "Travel date needed",
+        message: "Please select a travel date first to generate your AI plan.",
+      });
       return;
     }
 
@@ -175,7 +181,11 @@ export default function PackageDetails() {
       });
       setAiPlan(res.data.itinerary);
     } catch (err) {
-      alert("AI Generation failed. Check your backend routes.");
+      await showAlert({
+        variant: "error",
+        title: "AI generation failed",
+        message: "The smart itinerary could not be generated. Please try again.",
+      });
     } finally {
       setIsAiLoading(false);
     }

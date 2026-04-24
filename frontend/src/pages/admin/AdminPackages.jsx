@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import API from "../../api/axios";
 import PackageCard from "../../components/PackageCard";
 import usePackages from "../../context/usePackages";
+import { useAppModal } from "../../hooks/useAppModal";
 import {
   LayoutGrid,
   List,
@@ -17,6 +18,7 @@ export default function AdminPackages() {
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
   const [viewMode, setViewMode] = useState("table"); // "table" or "cards"
+  const { showAlert, showConfirm, showPrompt } = useAppModal();
 
   const fetchPackages = async () => {
     try {
@@ -37,34 +39,63 @@ export default function AdminPackages() {
   }, []);
 
   const handleApprove = async (id) => {
-    if (!window.confirm("Approve this itinerary?")) return;
+    const confirmed = await showConfirm({
+      title: "Approve this itinerary?",
+      message: "This package will become available to users immediately.",
+      confirmLabel: "Approve",
+      cancelLabel: "Cancel",
+    });
+    if (!confirmed) return;
+
     try {
       await API.patch(`/approve-package/${id}`);
       fetchPackages();
     } catch (err) {
-      alert("Approval failed");
+      await showAlert({
+        variant: "error",
+        title: "Approval failed",
+        message: "The itinerary could not be approved. Please try again.",
+      });
     }
   };
 
   const handleReject = async (id) => {
-    const reason = prompt("Enter reason for rejection:");
+    const reason = await showPrompt({
+      title: "Reject this itinerary",
+      message: "Add a short reason so the agent knows what to update.",
+      inputLabel: "Rejection reason",
+      inputPlaceholder: "Example: Please revise pricing and hotel details.",
+      inputRequired: true,
+      confirmLabel: "Submit Rejection",
+      cancelLabel: "Cancel",
+    });
     if (!reason) return;
+
     try {
       await API.patch(`/reject-package/${id}`, { rejectionReason: reason });
       fetchPackages();
     } catch (err) {
-      alert("Rejection failed");
+      await showAlert({
+        variant: "error",
+        title: "Rejection failed",
+        message: "The itinerary could not be rejected. Please try again.",
+      });
     }
   };
 
   const handleBulkApprove = async () => {
     if (selectedIds.length === 0) return;
+
     try {
       await API.patch("/package/bulk-approval", { packageIds: selectedIds });
       setSelectedIds([]);
       fetchPackages();
     } catch (err) {
-      alert("Bulk approval failed");
+      await showAlert({
+        variant: "error",
+        title: "Bulk approval failed",
+        message: "Selected itineraries could not be approved.",
+      });
     }
   };
 

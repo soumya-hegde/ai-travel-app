@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../../api/axios";
 import ReviewModal from "../../components/ReviewModal"; // Make sure this path is correct
+import { useAppModal } from "../../hooks/useAppModal";
 
 export default function Bookings() {
   const [bookings, setBookings] = useState([]);
@@ -11,6 +12,7 @@ export default function Bookings() {
   // --- REVIEW MODAL STATE ---
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const { showAlert } = useAppModal();
 
   const fetchBookings = async () => {
     try {
@@ -28,15 +30,27 @@ export default function Bookings() {
   const cancelBooking = async (id) => {
     const reason = (reasons[id] || "").trim();
     if (!reason) {
-      alert("Please enter a cancellation reason.");
+      await showAlert({
+        variant: "warning",
+        title: "Reason required",
+        message: "Please enter a cancellation reason before sending the request.",
+      });
       return;
     }
     try {
       await API.post(`/bookings/${id}/cancel-request`, { reason });
-      alert("Cancel request sent to admin.");
+      await showAlert({
+        variant: "success",
+        title: "Request sent",
+        message: "Your cancellation request has been sent to the admin.",
+      });
       setReasons((prev) => ({ ...prev, [id]: "" }));
     } catch (err) {
-      alert(err.response?.data?.error || err.message);
+      await showAlert({
+        variant: "error",
+        title: "Request failed",
+        message: err.response?.data?.error || err.message,
+      });
     }
   };
 
@@ -80,25 +94,34 @@ export default function Bookings() {
 
           <tbody className="divide-y">
             {bookings.map((b) => {
-              // Check if trip date has already passed
               const isPastTrip = new Date(b.travelDate) < new Date();
+              const isCancelled = b.status === "cancelled";
+              const isCompleted = b.status === "completed";
+              const canRequestCancel = b.status === "confirmed" && !isPastTrip;
 
               return (
-                <tr key={b._id}>
+                <tr
+                  key={b._id}
+                  className={isCancelled ? "bg-red-50/40 opacity-80" : ""}
+                >
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {b.packageId?.packageName || "Package"}
                   </td>
+
                   <td className="px-4 py-3 text-gray-600">
                     {new Date(b.travelDate).toLocaleDateString()}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">₹{b.totalAmount}</td>
+
+                  <td className="px-4 py-3 text-gray-600">
+                    Rs. {b.totalAmount}
+                  </td>
 
                   <td className="px-4 py-3">
                     <span
                       className={`rounded-full px-2 py-1 text-xs font-medium ${
-                        b.status === "completed"
+                        isCompleted
                           ? "bg-green-100 text-green-700"
-                          : b.status === "cancelled"
+                          : isCancelled
                             ? "bg-red-100 text-red-700"
                             : "bg-blue-100 text-blue-700"
                       }`}
@@ -108,8 +131,7 @@ export default function Bookings() {
                   </td>
 
                   <td className="px-4 py-3">
-                    {/* Only show input if trip is in the future and not cancelled */}
-                    {b.status === "confirmed" && !isPastTrip && (
+                    {canRequestCancel && (
                       <input
                         type="text"
                         placeholder="Reason for cancellation"
@@ -126,8 +148,7 @@ export default function Bookings() {
                   </td>
 
                   <td className="px-4 py-3 text-right space-x-2">
-                    {/* BUTTON 1: Rate Trip (Only if completed) */}
-                    {b.status === "completed" && (
+                    {isCompleted && (
                       <button
                         onClick={() => handleOpenReviewModal(b)}
                         className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-black transition"
@@ -136,23 +157,21 @@ export default function Bookings() {
                       </button>
                     )}
 
-                    {/* BUTTON 2: Request Cancel (Only if confirmed) */}
                     {b.status === "confirmed" && (
                       <button
                         onClick={() => cancelBooking(b._id)}
-                        disabled={isPastTrip} // DISABLE if date is over
+                        disabled={!canRequestCancel}
                         className={`rounded-lg px-4 py-2 text-white text-sm font-semibold transition ${
-                          isPastTrip
-                            ? "bg-red-200 cursor-not-allowed" // Light color if date is over
-                            : "bg-red-600 hover:bg-red-700 shadow-sm" // Normal color
+                          !canRequestCancel
+                            ? "bg-red-200 cursor-not-allowed"
+                            : "bg-red-600 hover:bg-red-700 shadow-sm"
                         }`}
                       >
                         Request Cancel
                       </button>
                     )}
 
-                    {/* LABEL: If trip is cancelled */}
-                    {b.status === "cancelled" && (
+                    {isCancelled && (
                       <span className="text-gray-400 text-xs italic">
                         Trip Cancelled
                       </span>

@@ -1,14 +1,23 @@
 import { useState } from "react";
 import API from "../api/axios";
 import { Star, X } from "lucide-react";
+import { useAppModal } from "../hooks/useAppModal";
 
 export default function ReviewModal({ booking, onClose, onSuccess }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
+  const { showAlert } = useAppModal();
 
   const handleSubmit = async () => {
-    if (!comment.trim()) return alert("Please add a comment");
+    if (!comment.trim()) {
+      await showAlert({
+        variant: "warning",
+        title: "Comment required",
+        message: "Please add a comment before submitting your review.",
+      });
+      return;
+    }
     setLoading(true);
     try {
       await API.post("/reviews", {
@@ -20,7 +29,11 @@ export default function ReviewModal({ booking, onClose, onSuccess }) {
       onSuccess();
       onClose();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to submit review");
+      await showAlert({
+        variant: "error",
+        title: "Review submission failed",
+        message: err.response?.data?.error || "Failed to submit review.",
+      });
     } finally {
       setLoading(false);
     }

@@ -17,7 +17,7 @@ export default function Register() {
   });
 
   const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useState([]);
 
   const validate = () => {
     const err = {};
@@ -38,6 +38,7 @@ export default function Register() {
 
     const err = validate();
     setErrors(err);
+    setServerError([]);
     if (Object.keys(err).length > 0) return;
 
     try {
@@ -66,7 +67,15 @@ export default function Register() {
       await API.post(endpoint, payload);
       navigate("/login");
     } catch (error) {
-      setServerError(error?.response?.data?.error || "Registration failed");
+      const apiError = error?.response?.data?.error;
+
+      if (Array.isArray(apiError)) {
+        setServerError(apiError);
+      } else if (typeof apiError === "string") {
+        setServerError([apiError]);
+      } else {
+        setServerError(["Registration failed"]);
+      }
     }
   };
 
@@ -162,8 +171,16 @@ export default function Register() {
             {isAgent ? "Register as User" : "Are you an agent? Register here"}
           </button>
 
-          {serverError && (
-            <p className="text-red-300 text-center text-sm">{serverError}</p>
+          {serverError.length > 0 && (
+            <div className="rounded-lg border border-red-200 bg-red-50/95 px-4 py-3 text-sm text-red-700 shadow-sm">
+              <ul className="list-disc pl-5 space-y-1">
+                {serverError.map((msg, index) => (
+                  <li key={index} className="font-medium">
+                    {msg}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           <button className="w-full bg-blue-950 text-white py-3 rounded-lg font-semibold hover:bg-black">

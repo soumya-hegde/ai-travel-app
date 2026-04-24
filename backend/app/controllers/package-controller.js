@@ -1,7 +1,10 @@
 const Package = require("../models/package-model");
-const fs = require('fs');
-const path = require('path'); 
+const User = require("../models/user-model");
+const fs = require("fs");
+const path = require("path");
+const sendMail = require("../utils/mailer");
 const { packageValidationSchema } = require("../validators/validation");
+
 const packageCtlr = {};
 
 packageCtlr.createPackage = async (req, res) => {
@@ -87,10 +90,13 @@ packageCtlr.adminReject = async (req, res) => {
     if (req.role !== "admin") {
       return res.status(403).json({ message: "Access denied" });
     }
+
     if (!req.body) {
       return res.status(400).json({ message: "Request body required" });
     }
+
     const { rejectionReason } = req.body;
+
     const package = await Package.findByIdAndUpdate(
       req.params.packageId,
       {
@@ -106,6 +112,32 @@ packageCtlr.adminReject = async (req, res) => {
       return res.status(404).json({ message: "Itinerary not found" });
     }
 
+    const agent = await User.findById(package.createdBy).select("username email");
+
+    if (agent?.email) {
+      const text = `
+Hello ${agent.username || "Agent"},
+
+Your itinerary has been rejected by the admin.
+
+Package Details:
+- Package: ${package.packageName}
+- Destination: ${package.packageDestination}
+- Status: rejected
+
+Reason:
+${package.rejectionReason || "Not specified"}
+
+You can update the itinerary and submit it again for approval.
+`;
+
+      await sendMail({
+        to: agent.email,
+        subject: "Your itinerary was rejected",
+        text,
+      });
+    }
+
     res.json({
       message: "Created Itinerary rejected",
       package: package,
@@ -114,6 +146,7 @@ packageCtlr.adminReject = async (req, res) => {
     res.status(500).json({ message: "Something went wrong!!!" });
   }
 };
+
 
 //bulk Approval
 packageCtlr.adminBulkApprove = async (req, res) => {
@@ -215,34 +248,58 @@ packageCtlr.list = async (req, res) => {
 packageCtlr.packageUpdate = async (req, res) => {
   try {
     if (req.role !== "agent") {
-      return res.status(403).json({ message: "Only agents can update itineraries" });
+      return res.status(403).json({
+        message: "Only agents can update itineraries",
+      });
     }
-    
-    if (req.body.keyAttractions && typeof req.body.keyAttractions === 'string') {
-        try {
-          req.body.keyAttractions = JSON.parse(req.body.keyAttractions);
-        } catch (e) {
-          console.log("Error parsing attractions string");
-        }
+
+    if (req.body.keyAttractions && typeof req.body.keyAttractions === "string") {
+      try {
+        req.body.keyAttractions = JSON.parse(req.body.keyAttractions);
+      } catch (e) {
+        return res.status(400).json({
+          message: "Key attractions format is invalid",
+        });
+      }
     }
 
     const packageId = req.params.packageId;
     const agentId = req.userId;
-    const package = await Package.findById(packageId);
+    const existingPackage = await Package.findById(packageId);
 
-    if (!package) {
-      return res.status(404).json({ message: "Itinerary not found" });
+    if (!existingPackage) {
+      return res.status(404).json({
+        message: "Itinerary not found",
+      });
     }
 
-    if (package.createdBy.toString() !== agentId) {
-      return res.status(403).json({ message: "You are not allowed to update this itinerary" });
+    if (existingPackage.createdBy.toString() !== agentId) {
+      return res.status(403).json({
+        message: "You are not allowed to update this itinerary",
+      });
+    }
+
+    if (existingPackage.status === "approved") {
+      return res.status(403).json({
+        message:
+          "Approved itineraries cannot be edited by agents. Ask admin to reject or mark it for revision first.",
+      });
     }
 
     const allowedFields = [
-      "packageName", "packageDescription", "packageDestination",
-      "packageDays", "packageNights", "packageAccommodation",
-      "packageTransportation", "packageMeals", "packageActivities",
-      "packagePrice", "packageDiscountPrice", "packageOffer", "keyAttractions",
+      "packageName",
+      "packageDescription",
+      "packageDestination",
+      "packageDays",
+      "packageNights",
+      "packageAccommodation",
+      "packageTransportation",
+      "packageMeals",
+      "packageActivities",
+      "packagePrice",
+      "packageDiscountPrice",
+      "packageOffer",
+      "keyAttractions",
     ];
 
     const updateData = {};
@@ -252,13 +309,11 @@ packageCtlr.packageUpdate = async (req, res) => {
       }
     });
 
-    //Handle new image uploads during update
     if (req.files && req.files.length > 0) {
-      updateData.packageImages = req.files.map(file => file.filename);
+      updateData.packageImages = req.files.map((file) => file.filename);
     }
 
-    updateData.status = "pending"; // Reset for re-approval
-    // Clear previous admin logs
+    updateData.status = "pending";
     updateData.approvedBy = null;
     updateData.approvedAt = null;
     updateData.rejectedBy = null;
@@ -271,14 +326,18 @@ packageCtlr.packageUpdate = async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    res.json({
+    return res.json({
       message: "Itinerary updated successfully and sent for re-approval",
       package: updatedPackage,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("packageUpdate error:", err);
+    return res.status(500).json({
+      message: "Unable to update itinerary right now. Please try again.",
+    });
   }
 };
+
 
 
 //Remove the Itinerary
